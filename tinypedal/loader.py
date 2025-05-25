@@ -51,6 +51,14 @@ def start():
     # 2 start api
     api.connect()
     api.start()
+
+    # Start WebSocket sender with config or defaults
+    ws_uri = cfg.websocket_uri
+    if not ws_uri:
+        ws_uri = "ws://localhost:8765"  # fallback default
+
+    ws_interval = cfg.websocket_interval
+    api.start_websocket_sender(ws_uri, ws_interval)
     # 3 start modules
     mctrl.start()
     # 4 start widgets

@@ -108,6 +108,18 @@ class APIControl:
         self._state_override = cfg.shared_memory_api["enable_active_state_override"]
         self._active_state = cfg.shared_memory_api["active_state"]
 
+    def start_websocket_sender(self, uri: str, interval: float = 0.1):
+        if hasattr(self._api, "start_websocket_sender"):
+            self._api.start_websocket_sender(uri, interval)
+        else:
+            logger.warning("WebSocket sender not supported by this API")
+
+    def stop_websocket_sender(self):
+        if hasattr(self._api, "stop_websocket_sender"):
+            self._api.stop_websocket_sender()
+        else:
+            logger.warning("WebSocket sender not supported by this API")
+
     @property
     def name(self) -> str:
         """API name output"""

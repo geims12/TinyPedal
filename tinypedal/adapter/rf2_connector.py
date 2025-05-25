@@ -27,6 +27,8 @@ import threading
 from copy import copy
 from time import monotonic, sleep
 from typing import Sequence
+import websockets
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -288,7 +290,7 @@ class SyncData:
 
 
 class RF2Info:
-    """RF2 shared memory data output"""
+    """RF2 shared memory data output with WebSocket sending"""
 
     __slots__ = (
         "_sync",
@@ -298,28 +300,65 @@ class RF2Info:
         "_tele",
         "_ext",
         "_ffb",
+        "_remote_data",
+        # WebSocket related
+        "_ws_uri",
+        "_ws_task",
+        "_ws_loop",
+        "_ws_stop_event",
+        "user",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, user) -> None:
+        self.user = user  # user object with .setting dictionary
         self._sync = SyncData()
         self._access_mode = 0
         self._rf2_pid = ""
+        self._remote_data = {}
+
         # Assign mmap instance
         self._scor = self._sync.dataset.scor
         self._tele = self._sync.dataset.tele
         self._ext = self._sync.dataset.ext
         self._ffb = self._sync.dataset.ffb
 
+        # WebSocket related
+        self._ws_uri = None
+        self._ws_task = None
+        self._ws_loop = None
+        self._ws_stop_event = threading.Event()
+
     def __del__(self):
         logger.info("sharedmemory: GC: RF2SM")
 
+    @property
+    def use_remote_memory(self) -> bool:
+        """Flag to enable remote memory reading via websocket"""
+        return self.user.setting.get("use_remote_memory", False)
+
+    @use_remote_memory.setter
+    def use_remote_memory(self, value: bool):
+        self.user.setting["use_remote_memory"] = value
+
+    # --- Shared memory control ---
+
     def start(self) -> None:
-        """Start data updating thread"""
-        self._sync.start(self._access_mode, self._rf2_pid)
+        """Start data updating thread if not using remote data"""
+        if not self.use_remote_memory:
+            self._sync.start(self._access_mode, self._rf2_pid)
 
     def stop(self) -> None:
-        """Stop data updating thread"""
-        self._sync.stop()
+        """Stop data updating thread if not using remote data"""
+        if not self.use_remote_memory:
+            self._sync.stop()
+
+    def setUseRemote(self, value: bool = True) -> None:
+        """Enable or disable remote data mode"""
+        self.use_remote_memory = value
+
+    def updateRemoteData(self, data: dict) -> None:
+        """Update the latest remote telemetry snapshot"""
+        self._remote_data = data
 
     def setPID(self, pid: str = "") -> None:
         """Set rF2 process ID for connecting to server data"""
@@ -344,6 +383,8 @@ class RF2Info:
     @property
     def rf2ScorInfo(self) -> rF2data.rF2ScoringInfo:
         """rF2 scoring info data"""
+        if self.use_remote_memory:
+            return self._remote_data.get("mScoringInfo", rF2data.rF2ScoringInfo())
         return self._scor.data.mScoringInfo
 
     def rf2ScorVeh(self, index: int | None = None) -> rF2data.rF2VehicleScoring:
@@ -354,6 +395,10 @@ class RF2Info:
         Args:
             index: None for local player.
         """
+        if self.use_remote_memory:
+            vehicles = self._remote_data.get("mVehicles", [])
+            i = self.playerIndex if index is None else index
+            return vehicles[i] if i < len(vehicles) else rF2data.rF2VehicleScoring()
         if index is None:
             return self._sync.player_scor
         return self._scor.data.mVehicles[index]
@@ -366,6 +411,10 @@ class RF2Info:
         Args:
             index: None for local player.
         """
+        if self.use_remote_memory:
+            vehicles = self._remote_data.get("mTeleVehicles", [])
+            i = self.playerIndex if index is None else index
+            return vehicles[i] if i < len(vehicles) else rF2data.rF2VehicleTelemetry()
         if index is None:
             return self._sync.player_tele
         return self._tele.data.mVehicles[self._sync.sync_tele_index(index)]
@@ -373,20 +422,29 @@ class RF2Info:
     @property
     def rf2Ext(self) -> rF2data.rF2Extended:
         """rF2 extended data"""
+        if self.use_remote_memory:
+            return self._remote_data.get("mExtended", rF2data.rF2Extended())
         return self._ext.data
 
     @property
     def rf2Ffb(self) -> rF2data.rF2ForceFeedback:
         """rF2 force feedback data"""
+        if self.use_remote_memory:
+            return self._remote_data.get("mForceFeedback", rF2data.rF2ForceFeedback())
         return self._ffb.data
 
     @property
     def playerIndex(self) -> int:
         """rF2 local player's scoring index"""
+        if self.use_remote_memory:
+            return self._remote_data.get("playerIndex", 0)
         return self._sync.player_scor_index
 
     def isPlayer(self, index: int) -> bool:
         """Check whether index is player"""
+        if self.use_remote_memory:
+            player_idx = self._remote_data.get("playerIndex", 0)
+            return player_idx == index
         if self._sync.override_player_index:
             return self._sync.player_scor_index == index
         return self._scor.data.mVehicles[index].mIsPlayer
@@ -394,9 +452,72 @@ class RF2Info:
     @property
     def isPaused(self) -> bool:
         """Check whether data stopped updating"""
+        if self.use_remote_memory:
+            return self._remote_data.get("paused", False)
         return self._sync.paused
 
+    # --- WebSocket sender methods ---
 
+    def setWebSocketURI(self, uri: str) -> None:
+        """Set WebSocket server URI"""
+        self._ws_uri = uri
+
+    def startWebSocketSender(self, interval: float = 0.1) -> None:
+        """Start WebSocket sender in a background thread"""
+
+        if self._ws_uri is None:
+            raise RuntimeError("WebSocket URI not set")
+
+        if self._ws_task is not None:
+            # Already running
+            return
+
+        self._ws_stop_event.clear()
+
+        def run_loop():
+            self._ws_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._ws_loop)
+            self._ws_task = self._ws_loop.create_task(self._ws_sender_loop(interval))
+            try:
+                self._ws_loop.run_until_complete(self._ws_task)
+            except asyncio.CancelledError:
+                pass
+
+        threading.Thread(target=run_loop, daemon=True).start()
+
+    def stopWebSocketSender(self) -> None:
+        """Stop WebSocket sender cleanly"""
+        if self._ws_loop and self._ws_task:
+            self._ws_task.cancel()
+            self._ws_stop_event.set()
+            self._ws_loop.call_soon_threadsafe(self._ws_loop.stop)
+            self._ws_task = None
+            self._ws_loop = None
+
+    async def _ws_sender_loop(self, interval: float):
+        try:
+            async with websockets.connect(self._ws_uri) as websocket:
+                while not self._ws_stop_event.is_set():
+                    data = self._collect_data()
+                    message = json.dumps(data, default=lambda o: o.__dict__)
+                    await websocket.send(message)
+                    await asyncio.sleep(interval)
+        except Exception as e:
+            logger.error(f"WebSocket send error: {e}")
+
+    def _collect_data(self) -> dict:
+        """Collect the data from shared memory to send"""
+        return {
+            "mScoringInfo": self._scor.data.mScoringInfo.__dict__,
+            "mVehicles": [v.__dict__ for v in self._scor.data.mVehicles],
+            "mTeleVehicles": [v.__dict__ for v in self._tele.data.mVehicles],
+            "mExtended": self._ext.data.__dict__,
+            "mForceFeedback": self._ffb.data.__dict__,
+            "playerIndex": self._sync.player_scor_index,
+            "paused": self._sync.paused,
+        }
+    
+    
 def test_api():
     """API test run"""
     # Add logger

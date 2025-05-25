@@ -114,6 +114,14 @@ class SimRF2(Connector):
         self.info.setPlayerIndex(config[3])
         rf2_data.tostr = partial(bytes_to_str, char_encoding=config[4])
 
+    # New methods for WebSocket sender
+    def start_websocket_sender(self, uri: str, interval: float = 0.1):
+        self.info.setWebSocketURI(uri)
+        self.info.startWebSocketSender(interval)
+
+    def stop_websocket_sender(self):
+        self.info.stopWebSocketSender()
+
 
 class SimLMU(Connector):
     """Le Mans Ultimate"""
@@ -139,6 +147,14 @@ class SimLMU(Connector):
         self.info.setPlayerOverride(config[2])
         self.info.setPlayerIndex(config[3])
         rf2_data.tostr = partial(bytes_to_str, char_encoding=config[4])
+
+    # New methods for WebSocket sender
+    def start_websocket_sender(self, uri: str, interval: float = 0.1):
+        self.info.setWebSocketURI(uri)
+        self.info.startWebSocketSender(interval)
+
+    def stop_websocket_sender(self):
+        self.info.stopWebSocketSender()
 
 
 # Add new API to API_PACK

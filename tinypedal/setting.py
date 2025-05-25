@@ -430,6 +430,31 @@ class Setting:
         """Get max saving attempts"""
         return max(self.application["maximum_saving_attempts"], 3)
 
+    @property
+    def use_remote_memory(self) -> bool:
+        """Flag to enable remote memory reading via websocket"""
+        return self.user.setting.get("use_remote_memory", False)
+
+    @use_remote_memory.setter
+    def use_remote_memory(self, value: bool):
+        self.user.setting["use_remote_memory"] = value
+
+    @property
+    def websocket_uri(self) -> str:
+        """Websocket URI for remote telemetry data"""
+        return self.user.setting.get("websocket_uri", "")
+
+    @websocket_uri.setter
+    def websocket_uri(self, value: str):
+        self.user.setting["websocket_uri"] = value
+
+    @property
+    def websocket_interval(self) -> float:
+        return self.user.setting.get("websocket_interval", 0.1)
+
+    @websocket_interval.setter
+    def websocket_interval(self, value: float):
+        self.user.setting["websocket_interval"] = value
 
 # Assign config setting
 cfg = Setting()

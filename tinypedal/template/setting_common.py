@@ -39,6 +39,9 @@ COMMON_DEFAULT = {
         "enable_player_index_override": False,
         "player_index": -1,
         "character_encoding": "UTF-8",
+        "use_remote_memory": False,  # New flag: False = local shared memory, True = remote via websocket
+        "websocket_uri": "ws://localhost:12345",  # New websocket URI for remote telemetry
+        "websocket_interval": 0.1,
     },
     "units": {
         "distance_unit": "Meter",
