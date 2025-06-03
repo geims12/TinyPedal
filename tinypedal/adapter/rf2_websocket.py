@@ -66,6 +66,9 @@ class RF2WebSocket:
         else:
             logger.warning("WebSocket loop is not running — cannot send request")
 
+    def request_session_list(self, callback):
+        self.send_request("list_sessions", None, callback, response_type="session_list")
+
 
     def _start_loop(self):
         self._loop = asyncio.new_event_loop()
@@ -164,6 +167,33 @@ class RF2WebSocket:
             data = json.loads(msg)
             msg_type = data.get("type")
             logger.info(f"✅ Received JSON message: {msg_type}")
+            logger.info(f"Raw JSON message received: {msg!r}")
+
+            # Handle session_list messages explicitly
+            if msg_type == "session_list":
+                # Defensive check: ensure sessions is a list
+                sessions = data.get("sessions", [])
+                if isinstance(sessions, list):
+                    logger.info(f"Session list received with {len(sessions)} sessions:")
+                    for session in sessions:
+                        # Defensive: session should be a dict
+                        if isinstance(session, dict):
+                            logger.info(f"  - Name: {session.get('name')}, Sender: {session.get('sender')}, Receivers: {session.get('receivers')}")
+                        else:
+                            logger.warning(f"Invalid session entry (not a dict): {session}")
+                else:
+                    logger.warning(f"Invalid sessions data (not a list): {sessions}")
+
+                # Optionally, if you want to dispatch a callback for session_list:
+                callback = self._pending_requests.pop("session_list", None)
+                if callback:
+                    logger.info(f"✅ Dispatching one-time callback for type: session_list")
+                    callback(data)
+                else:
+                    logger.warning("⚠ No one-time callback registered for 'session_list'")
+
+                # Return early since we handled it here
+                return
 
             if msg_type == "fetch_pit_menu" and self._role == "sender":
                 logger.info("Fetching pit menu from local API...")
@@ -197,13 +227,13 @@ class RF2WebSocket:
                 callback(data)
                 return
 
-            # Dispatch persistent callback
+            '''# Dispatch persistent callback
             callback = self._callbacks.get(msg_type)
             if callback:
                 logger.info(f"📌 Dispatching persistent callback for type: {msg_type}")
                 callback(data)
             else:
-                logger.warning(f"⚠ No callback registered for type: {msg_type}")
+                logger.warning(f"⚠ No callback registered for type: {msg_type}")'''
 
         except Exception as e:
             logger.error(f"Invalid JSON message received: {e}")

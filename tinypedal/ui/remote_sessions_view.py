@@ -77,15 +77,17 @@ class SessionBrowser(QWidget):
         except Exception as e:
             self.label_status.setText(f"Error: {e}")
 
-    def update_sessions(self, sessions: list):
-        """Update session list in UI"""
+    def update_sessions(self, data: dict):
+        """Update session list in UI from full JSON dict"""
+        sessions = data.get("sessions", [])
         self.listbox_sessions.clear()
         for sess in sessions:
-            name = sess["name"]
+            name = sess.get("name", "<unknown>")
             sender = sess.get("sender") or "No sender"
             viewers = sess.get("receivers", 0)
             label = f"{name} — {sender}, {viewers} viewers"
             self.listbox_sessions.addItem(label)
+            # Use role 256 as user data to store session name
             self.listbox_sessions.item(self.listbox_sessions.count() - 1).setData(256, name)
 
         self.label_status.setText(f"Found {len(sessions)} active session(s)")

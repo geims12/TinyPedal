@@ -50,11 +50,24 @@ class PitMenuRemoteControl(QWidget):
         for key in PMC_KEYS:
             row = QHBoxLayout()
             label = QLabel(PMC_NAMES.get(key, f"PMC {key}"))
+
             combo = QComboBox()
             combo.setEnabled(False)
             self._combo_boxes[key] = combo
+
+            # Up/down arrow buttons
+            up_btn = QPushButton("▲")
+            up_btn.setFixedWidth(25)
+            up_btn.clicked.connect(self._make_arrow_handler(combo, direction="up"))
+
+            down_btn = QPushButton("▼")
+            down_btn.setFixedWidth(25)
+            down_btn.clicked.connect(self._make_arrow_handler(combo, direction="down"))
+
             row.addWidget(label)
             row.addWidget(combo)
+            row.addWidget(up_btn)
+            row.addWidget(down_btn)
             layout.addLayout(row)
 
         self.setLayout(layout)
@@ -150,6 +163,19 @@ class PitMenuRemoteControl(QWidget):
         else:
             self._show_error("No WebSocket client available")
 
+    def _make_arrow_handler(self, combo: QComboBox, direction: str):
+        def handler():
+            current_index = combo.currentIndex()
+            count = combo.count()
+            if count == 0:
+                return
+            if direction == "up" and current_index > 0:
+                combo.setCurrentIndex(current_index - 1)
+            elif direction == "down" and current_index < count - 1:
+                combo.setCurrentIndex(current_index + 1)
+        return handler
+
+    
     def _show_error(self, msg: str):
         # Emit signal with error message for thread-safe display
         self.show_error_signal.emit(msg)
