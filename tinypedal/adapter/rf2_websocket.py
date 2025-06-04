@@ -24,7 +24,12 @@ POST_PIT_MENU_URL = "http://localhost:6397/rest/garage/PitMenu/loadPitMenu"
 
 class RF2WebSocket:
     def __init__(self, uri: str, session_name: str, role: str, data_provider=None, data_receiver=None):
-        self._uri = uri if uri.startswith("ws://") or uri.startswith("wss://") else f"ws://{uri}"
+        if not uri.startswith("ws://") and not uri.startswith("wss://"):
+            uri = f"wss://{uri}"
+        elif uri.startswith("ws://"):
+            uri = uri.replace("ws://", "wss://", 1)
+        
+        self._uri = uri 
         self._session_name = session_name
         self._role = role
         self._data_provider = data_provider
