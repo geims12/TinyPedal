@@ -8,6 +8,7 @@ import contextlib
 import httpx
 import websockets
 from typing import Callable
+from ..setting import cfg
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class RF2WebSocket:
         elif uri.startswith("ws://"):
             uri = uri.replace("ws://", "wss://", 1)
         
+
         self._uri = uri 
         self._session_name = session_name
         self._role = role
@@ -40,6 +42,7 @@ class RF2WebSocket:
         self._thread = threading.Thread(target=self._start_loop, daemon=True)
         self._callbacks: dict[str, Callable[[dict], None]] = {}
         self._pending_requests: dict[str, Callable[[dict], None]] = {}
+        
 
     def start(self):
         self._thread.start()
@@ -119,10 +122,12 @@ class RF2WebSocket:
                 self._ws = None
 
     async def _send_loop(self, ws):
+        ws_interval = cfg.websocket_interval
+        
         while self._running:
             try:
                 if self._data_provider and self._data_provider.isPaused:
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(ws_interval)
                     continue
 
                 frames = []
@@ -133,7 +138,7 @@ class RF2WebSocket:
                     frames.append(frame)
 
                 await ws.send(b"".join(frames))
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(ws_interval)
             except Exception as e:
                 logger.error(f"Send loop error: {e}")
                 break

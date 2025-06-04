@@ -59,12 +59,12 @@ class APIControl:
         logger.warning("CONNECTING: Invalid API name, fall back to default")
         self._api = API_PACK[0]()
 
-        def start(self):
-            """Start API"""
-            logger.info("ENCODING: %s", cfg.shared_memory_api["character_encoding"])
-            logger.info("CONNECTING: %s API", self._api.NAME)
-            self.setup()
-            self._api.start()
+    def start(self):
+        """Start API"""
+        logger.info("ENCODING: %s", cfg.shared_memory_api["character_encoding"])
+        logger.info("CONNECTING: %s API", self._api.NAME)
+        self.setup()
+        self._api.start()
 
         # Register role change hook after API starts
         try:
