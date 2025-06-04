@@ -41,8 +41,12 @@ class PitMenuRemoteControl(QWidget):
         self.button_fetch.clicked.connect(self._fetch_pit_menu)
         self.button_post = QPushButton("📤 Send Pit Menu")
         self.button_post.clicked.connect(self._send_pit_menu)
+        self.button_refresh = QPushButton("🔄 Refresh")
+        self.button_refresh.clicked.connect(self.refresh)
+
         control_layout.addWidget(self.button_fetch)
         control_layout.addWidget(self.button_post)
+        control_layout.addWidget(self.button_refresh)
         layout.addLayout(control_layout)
 
         # PMC combo boxes with labels
@@ -175,7 +179,6 @@ class PitMenuRemoteControl(QWidget):
                 combo.setCurrentIndex(current_index + 1)
         return handler
 
-    
     def _show_error(self, msg: str):
         # Emit signal with error message for thread-safe display
         self.show_error_signal.emit(msg)
