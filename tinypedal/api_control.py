@@ -47,19 +47,9 @@ class APIControl:
         self.read = None
 
     def connect(self, name: str = ""):
-        """Connect to API
-
-        Args:
-            name: match API name in API_NAME_LIST
-        """
+        """Connect to API"""
         if not name:
             name = cfg.shared_memory_api["api_name"]
-
-        # Do not create new instance if same API already loaded
-        self._same_api_loaded = bool(self._api is not None and self._api.NAME == name)
-        if self._same_api_loaded:
-            logger.info("CONNECTING: same API detected, fast restarting")
-            return
 
         for _api in API_PACK:
             if _api.NAME == name:
@@ -69,12 +59,12 @@ class APIControl:
         logger.warning("CONNECTING: Invalid API name, fall back to default")
         self._api = API_PACK[0]()
 
-    def start(self):
-        """Start API"""
-        logger.info("ENCODING: %s", cfg.shared_memory_api["character_encoding"])
-        logger.info("CONNECTING: %s API", self._api.NAME)
-        self.setup()
-        self._api.start()
+        def start(self):
+            """Start API"""
+            logger.info("ENCODING: %s", cfg.shared_memory_api["character_encoding"])
+            logger.info("CONNECTING: %s API", self._api.NAME)
+            self.setup()
+            self._api.start()
 
         # Register role change hook after API starts
         try:
