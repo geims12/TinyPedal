@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from ..setting import cfg
 from ..api_control import api
 from ._common import UIScaler
+from .pit_menu_remote_control import PitMenuRemoteControl
 
 
 class SessionBrowser(QWidget):
@@ -105,6 +106,11 @@ class SessionBrowser(QWidget):
         cfg.shared_memory_api["websocket_session"] = session_name
         cfg.save()
         api.restart()
+        from ..module_control import wctrl
+
+        pit_menu_widget = wctrl._active_modules.get("pit_menu_widget")
+        if pit_menu_widget:
+            pit_menu_widget.refresh()
 
         self.label_status.setText(f"Joined session: <b>{session_name}</b>")
 
