@@ -43,7 +43,8 @@ COMMON_DEFAULT = {
         "connect_to_remote": False,
         "websocket_uri": "ws.spqracing.it",  # New websocket URI for remote telemetry
         "websocket_interval": 0.1,
-        "websocket_session" : "default"
+        "websocket_session" : "default",
+        "auth_key" : ""
     },
     "units": {
         "distance_unit": "Meter",
