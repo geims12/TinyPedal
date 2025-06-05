@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QWidget,
+    QInputDialog,
 )
 from PySide6.QtCore import Qt
 from ..setting import cfg
@@ -118,26 +119,37 @@ class SessionBrowser(QWidget):
     def update_sessions(self, sessions: list):
         """Update session list in UI"""
         self.listbox_sessions.clear()
+
         for sess in sessions:
-            name = sess["name"]
-            sender = sess.get("sender") or "No sender"
-            viewers = sess.get("receivers", 0)
-            label = f"{name} — {sender}, {viewers} viewers"
-            self.listbox_sessions.addItem(label)
+            name = sess.get("name", "Unnamed")
+            sender_info = sess.get("sender", {})
+            sender_name = f"{sender_info.get('name', '').strip()} {sender_info.get('surname', '').strip()}".strip()
+            sender_name = sender_name if sender_name else "No sender info"
+
+            receivers = sess.get("receivers", [])
+            if receivers:
+                receiver_lines = "\n    " + "\n    ".join(
+                    f"{r.get('name', '').strip()} {r.get('surname', '').strip()}".strip() or "Unnamed"
+                    for r in receivers
+                )
+            else:
+                receiver_lines = "\n    — No viewers"
+
+            display_text = f"Session: {name}\nSender: {sender_name}\nReceivers:{receiver_lines}"
+
+            self.listbox_sessions.addItem(display_text)
             self.listbox_sessions.item(self.listbox_sessions.count() - 1).setData(256, name)
 
         self.label_status.setText(f"Found {len(sessions)} active session(s)")
 
+
     def join_selected(self):
-        """Join selected session"""
-        selected_item = self.listbox_sessions.currentItem()
-        if not selected_item:
+        """Prompt user to enter session name manually, then join it"""
+        session_name, ok = QInputDialog.getText(self, "Join Session", "Enter session name to join:")
+        if not ok or not session_name.strip():
             return
 
-        session_name = selected_item.data(256)
-        if not session_name:
-            return
-
+        session_name = session_name.strip()
         cfg.shared_memory_api["websocket_session"] = session_name
         cfg.save()
         api.restart()
