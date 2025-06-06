@@ -26,7 +26,7 @@ import logging
 import re
 from types import MappingProxyType
 
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFrame,
