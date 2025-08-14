@@ -26,8 +26,10 @@ from typing import NamedTuple
 
 # Import APIs
 from .adapter import rf2_connector, rf2_data
+from .adapter.syncer import get_rf2_info
 from .regex_pattern import API_NAME_LMU, API_NAME_RF2
 from .validator import bytes_to_str
+from .setting import cfg
 
 
 class APIDataSet(NamedTuple):
@@ -47,8 +49,8 @@ class APIDataSet(NamedTuple):
     wheel: rf2_data.Wheel
 
 
-def set_dataset_rf2(info: rf2_connector.RF2Info) -> APIDataSet:
-    """Set API data set - RF2"""
+def set_dataset_rf2(info) -> APIDataSet:
+    """Set API data set - RF2 or Remote"""
     return APIDataSet(
         rf2_data.Check(info),
         rf2_data.Brake(info),
@@ -68,9 +70,7 @@ def set_dataset_rf2(info: rf2_connector.RF2Info) -> APIDataSet:
 class Connector(ABC):
     """API Connector"""
 
-    __slots__ = (
-        "info",
-    )
+    __slots__ = ("info",)
 
     @abstractmethod
     def start(self):
@@ -82,50 +82,51 @@ class Connector(ABC):
 
     @abstractmethod
     def dataset(self) -> APIDataSet:
-        """Dateset"""
+        """Dataset"""
 
     @abstractmethod
     def setup(self, *config):
         """Setup API parameters"""
 
 
+
 class SimRF2(Connector):
     """rFactor 2"""
 
-    __slots__ = ()
+    __slots__ = ("_config",)
     NAME = API_NAME_RF2
 
     def __init__(self):
-        self.info = rf2_connector.RF2Info()
+        self.info = None
+        self._config = None
 
     def start(self):
-        self.info.start()
+        self.info = get_rf2_info(self._config)
 
     def stop(self):
-        self.info.stop()
+        if hasattr(self.info, "stop"):
+            self.info.stop()
 
     def dataset(self) -> APIDataSet:
         return set_dataset_rf2(self.info)
 
     def setup(self, *config):
-        self.info.setMode(config[0])
-        self.info.setPID(config[1])
-        self.info.setPlayerOverride(config[2])
-        self.info.setPlayerIndex(config[3])
-        rf2_data.tostr = partial(bytes_to_str, char_encoding=config[4])
+        self._config = config[0]  # expects full config dict as first arg
+        rf2_data.tostr = partial(bytes_to_str, char_encoding=config[1])
 
 
 class SimLMU(Connector):
     """Le Mans Ultimate"""
 
-    __slots__ = ()
+    __slots__ = ("_config",)
     NAME = API_NAME_LMU
 
     def __init__(self):
-        self.info = rf2_connector.RF2Info()
+        self.info = None
+        self._config = None
 
     def start(self):
-        self.info.start()
+        self.info = get_rf2_info(self._config)
 
     def stop(self):
         self.info.stop()
@@ -134,11 +135,9 @@ class SimLMU(Connector):
         return set_dataset_rf2(self.info)
 
     def setup(self, *config):
-        self.info.setMode(config[0])
-        self.info.setPID(config[1])
-        self.info.setPlayerOverride(config[2])
-        self.info.setPlayerIndex(config[3])
-        rf2_data.tostr = partial(bytes_to_str, char_encoding=config[4])
+        self._config = config[0]
+        rf2_data.tostr = partial(bytes_to_str, char_encoding=config[1])
+
 
 
 # Add new API to API_PACK

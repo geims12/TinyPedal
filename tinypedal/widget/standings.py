@@ -20,6 +20,10 @@
 Standings Widget
 """
 
+
+from PySide6.QtWidgets import QWidget
+
+
 from .. import calculation as calc
 from ..api_control import api
 from ..const_common import TEXT_PLACEHOLDER

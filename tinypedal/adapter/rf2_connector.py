@@ -27,6 +27,13 @@ import threading
 from copy import copy
 from time import monotonic, sleep
 from typing import TYPE_CHECKING, Sequence
+import websockets
+import asyncio
+import json
+import ctypes
+import zlib
+import struct
+
 
 if __name__ == "__main__":  # local import check
     import sys
@@ -45,6 +52,13 @@ from pyRfactor2SharedMemory.rF2MMap import (
 )
 
 logger = logging.getLogger(__name__)
+
+TYPE_IDS = {
+    "scor": 0x01,
+    "tele": 0x02,
+    "ext":  0x03,
+    "ffb":  0x04,
+}
 
 
 def local_scoring_index(scor_veh: Sequence[rF2data.rF2VehicleScoring]) -> int:
@@ -285,115 +299,6 @@ class SyncData:
 
         logger.info("sharedmemory: UPDATING: thread stopped")
 
-
-class RF2Info:
-    """RF2 shared memory data output"""
-
-    __slots__ = (
-        "_sync",
-        "_access_mode",
-        "_rf2_pid",
-        "_scor",
-        "_tele",
-        "_ext",
-        "_ffb",
-    )
-
-    def __init__(self) -> None:
-        self._sync = SyncData()
-        self._access_mode = 0
-        self._rf2_pid = ""
-        # Assign mmap instance
-        self._scor = self._sync.dataset.scor
-        self._tele = self._sync.dataset.tele
-        self._ext = self._sync.dataset.ext
-        self._ffb = self._sync.dataset.ffb
-
-    def __del__(self):
-        logger.info("sharedmemory: GC: RF2SM")
-
-    def start(self) -> None:
-        """Start data updating thread"""
-        self._sync.start(self._access_mode, self._rf2_pid)
-
-    def stop(self) -> None:
-        """Stop data updating thread"""
-        self._sync.stop()
-
-    def setPID(self, pid: str = "") -> None:
-        """Set rF2 process ID for connecting to server data"""
-        self._rf2_pid = str(pid)
-
-    def setMode(self, mode: int = 0) -> None:
-        """Set rF2 mmap access mode
-
-        Args:
-            mode: 0 = copy access, 1 = direct access
-        """
-        self._access_mode = mode
-
-    def setPlayerOverride(self, state: bool = False) -> None:
-        """Enable player index override state"""
-        self._sync.override_player_index = state
-
-    def setPlayerIndex(self, index: int = INVALID_INDEX) -> None:
-        """Manual override player index"""
-        self._sync.player_scor_index = min(max(index, INVALID_INDEX), MAX_VEHICLES - 1)
-
-    @property
-    def rf2ScorInfo(self) -> rF2data.rF2ScoringInfo:
-        """rF2 scoring info data"""
-        return self._scor.data.mScoringInfo
-
-    def rf2ScorVeh(self, index: int | None = None) -> rF2data.rF2VehicleScoring:
-        """rF2 scoring vehicle data
-
-        Specify index for specific player.
-
-        Args:
-            index: None for local player.
-        """
-        if index is None:
-            return self._sync.player_scor
-        return self._scor.data.mVehicles[index]
-
-    def rf2TeleVeh(self, index: int | None = None) -> rF2data.rF2VehicleTelemetry:
-        """rF2 telemetry vehicle data
-
-        Specify index for specific player.
-
-        Args:
-            index: None for local player.
-        """
-        if index is None:
-            return self._sync.player_tele
-        return self._tele.data.mVehicles[self._sync.sync_tele_index(index)]
-
-    @property
-    def rf2Ext(self) -> rF2data.rF2Extended:
-        """rF2 extended data"""
-        return self._ext.data
-
-    @property
-    def rf2Ffb(self) -> rF2data.rF2ForceFeedback:
-        """rF2 force feedback data"""
-        return self._ffb.data
-
-    @property
-    def playerIndex(self) -> int:
-        """rF2 local player's scoring index"""
-        return self._sync.player_scor_index
-
-    def isPlayer(self, index: int) -> bool:
-        """Check whether index is player"""
-        if self._sync.override_player_index:
-            return self._sync.player_scor_index == index
-        return self._scor.data.mVehicles[index].mIsPlayer
-
-    @property
-    def isPaused(self) -> bool:
-        """Check whether data stopped updating"""
-        return self._sync.paused
 
 
 def test_api():

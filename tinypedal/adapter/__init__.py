@@ -18,4 +18,26 @@
 
 """
 API data adapter
-"""
+
+
+from .syncer import RF2Syncer
+
+
+class DataAdapter:
+    """Read & sort data into groups
+
+    Attributes:
+        info: API object.
+    """
+
+    __slots__ = (
+        "info",
+    )
+
+    def __init__(self, info: RF2Syncer) -> None:
+        """Initialize API setting
+
+        Args:
+            info: API object.
+        """
+        self.info = info

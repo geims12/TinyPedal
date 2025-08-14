@@ -47,19 +47,9 @@ class APIControl:
         self.read = None
 
     def connect(self, name: str = ""):
-        """Connect to API
-
-        Args:
-            name: match API name in API_NAME_LIST
-        """
+        """Connect to API"""
         if not name:
             name = cfg.shared_memory_api["api_name"]
-
-        # Do not create new instance if same API already loaded
-        self._same_api_loaded = bool(self._api is not None and self._api.NAME == name)
-        if self._same_api_loaded:
-            logger.info("CONNECTING: same API detected, fast restarting")
-            return
 
         for _api in API_PACK:
             if _api.NAME == name:
@@ -76,13 +66,19 @@ class APIControl:
         self.setup()
         self._api.start()
 
+        # Register role change hook after API starts
+        try:
+            import tinypedal.hook
+            tinypedal.hook.on_role_change_hook = self.restart
+        except ImportError:
+            logger.warning("Could not register role-change hook")
+
         # Reload dataset if API changed
         if self.read is None or not self._same_api_loaded:
-            init_read = self._api.dataset()
-            self.read = init_read
+            self.read = self._api.dataset()
             self._same_api_loaded = True
-
-        logger.info("CONNECTED: %s API (%s)", self._api.NAME, self.version)
+        else:
+            self.read = self._api.dataset()
 
     def stop(self):
         """Stop API"""
@@ -97,32 +93,25 @@ class APIControl:
         self.start()
 
     def setup(self):
-        """Setup & apply API changes"""
         self._api.setup(
-            cfg.shared_memory_api["access_mode"],
-            cfg.shared_memory_api["process_id"],
-            cfg.shared_memory_api["enable_player_index_override"],
-            cfg.shared_memory_api["player_index"],
-            cfg.shared_memory_api["character_encoding"].lower(),
+            cfg,
+            cfg.shared_memory_api["character_encoding"].lower()
         )
         self._state_override = cfg.shared_memory_api["enable_active_state_override"]
         self._active_state = cfg.shared_memory_api["active_state"]
 
     @property
     def name(self) -> str:
-        """API name output"""
         return self._api.NAME
 
     @property
     def state(self) -> bool:
-        """API state output"""
         if self._state_override:
             return self._active_state
         return self.read.check.api_state()
 
     @property
     def version(self) -> str:
-        """API version output"""
         version = self.read.check.api_version()
         return version if version else "unknown"
 

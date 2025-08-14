@@ -28,7 +28,7 @@ import logging
 import os
 import time
 
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QHeaderView,

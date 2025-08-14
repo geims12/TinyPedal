@@ -26,9 +26,9 @@ import logging
 import os
 from typing import Callable
 
-from PySide2.QtCore import QBasicTimer, Qt, QUrl
-from PySide2.QtMultimedia import QMediaPlayer
-from PySide2.QtWidgets import (
+from PySide6.QtCore import QBasicTimer, Qt, QUrl
+from PySide6.QtMultimedia import QMediaPlayer
+from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,

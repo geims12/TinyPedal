@@ -755,7 +755,7 @@ WIDGET_DEFAULT = {
         "bar_padding": 0.2,
         "bar_width": 5,
         "bar_gap": 0,
-        "show_absolute_refueling": False,
+        "show_absolute_refueling": True,
         "font_color_pits": "#DDDDDD",
         "bkg_color_pits": "#666666",
         "font_color_remain": "#FFFFFF",

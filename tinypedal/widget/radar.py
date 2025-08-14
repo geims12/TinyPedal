@@ -23,8 +23,8 @@ Radar Widget
 from itertools import islice
 from typing import NamedTuple
 
-from PySide2.QtCore import QRectF, Qt
-from PySide2.QtGui import (
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import (
     QBrush,
     QColor,
     QLinearGradient,
