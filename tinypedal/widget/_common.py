@@ -24,8 +24,8 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-from PySide2.QtCore import QPoint
-from PySide2.QtWidgets import QApplication, QFrame, QLabel, QWidget
+from PySide6.QtCore import QPoint
+from PySide6.QtWidgets import QApplication, QFrame, QLabel, QWidget
 
 
 class FontMetrics(NamedTuple):

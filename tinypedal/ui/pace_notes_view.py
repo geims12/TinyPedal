@@ -76,20 +76,16 @@ class PaceNotesPlayer(QMediaPlayer):
         self._play_queue: list[str] = []
 
         # Set compatibility
-        if os.getenv("PYSIDE_OVERRIDE") == "6":
-            from PySide6.QtMultimedia import QAudioOutput
+        
+        from PySide6.QtMultimedia import QAudioOutput
 
-            audio_output = QAudioOutput()
-            self.setAudioOutput(audio_output)
+        audio_output = QAudioOutput()
+        self.setAudioOutput(audio_output)
             # Assign methods for qt6
-            self.set_source = self.setSource
-            self.set_volume = audio_output.setVolume
-            self.is_playing = self.__is_playing_qt6
-        else:
-            # Assign methods for qt5
-            self.set_source = self.setMedia
-            self.set_volume = self.setVolume
-            self.is_playing = self.__is_playing_qt5
+        self.set_source = self.setSource
+        self.set_volume = audio_output.setVolume
+        self.is_playing = self.__is_playing_qt6
+        
 
     def set_playback(self, enabled: bool):
         """Set playback state"""

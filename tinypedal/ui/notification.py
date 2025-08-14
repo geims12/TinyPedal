@@ -22,9 +22,9 @@ Notification
 
 from __future__ import annotations
 
-from PySide2.QtCore import Slot
-from PySide2.QtGui import QDesktopServices
-from PySide2.QtWidgets import (
+from PySide6.QtCore import Slot
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QVBoxLayout,

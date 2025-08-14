@@ -26,7 +26,7 @@ import asyncio
 import logging
 import threading
 
-from PySide2.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal
 
 from .async_request import get_response, set_header_get
 from .const_app import APP_NAME, REPO_NAME
