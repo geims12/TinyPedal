@@ -123,17 +123,15 @@ class Realtime(Overlay):
 
     def timerEvent(self, event):
         """Update when vehicle on track"""
-        if self.state.active:
+        # Map
+        modified = minfo.mapping.lastModified
+        self.update_map(modified)
 
-            # Map
-            modified = minfo.mapping.lastModified
-            self.update_map(modified)
-
-            # Vehicles
-            veh_data_version = minfo.vehicles.dataSetVersion
-            if self.last_veh_data_version != veh_data_version:
-                self.last_veh_data_version = veh_data_version
-                self.update()
+        # Vehicles
+        veh_data_version = minfo.vehicles.dataSetVersion
+        if self.last_veh_data_version != veh_data_version:
+            self.last_veh_data_version = veh_data_version
+            self.update()
 
     # GUI update methods
     def update_map(self, data):
@@ -149,7 +147,7 @@ class Realtime(Overlay):
         # Draw map
         self.draw_map_image(painter)
         # Draw vehicles
-        self.draw_vehicle(painter, minfo.vehicles.dataSet, minfo.vehicles.drawOrder)
+        self.draw_vehicle(painter, minfo.vehicles.dataSet, minfo.relative.drawOrder)
         # Apply mask
         if self.wcfg["show_fade_out"]:
             painter.setCompositionMode(QPainter.CompositionMode_DestinationOut)

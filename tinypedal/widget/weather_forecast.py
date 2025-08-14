@@ -65,7 +65,7 @@ class Realtime(Overlay):
         self.unit_temp = set_unit_temperature(self.cfg.units["temperature_unit"])
 
         # Base style
-        self.setStyleSheet(self.set_qss(
+        self.set_base_style(self.set_qss(
             font_family=self.wcfg["font_name"],
             font_size=self.wcfg["font_size"],
             font_weight=self.wcfg["font_weight"])
@@ -154,11 +154,6 @@ class Realtime(Overlay):
 
     def timerEvent(self, event):
         """Update when vehicle on track"""
-        if self.state.active:
-            self.update_weather_forecast_restapi()
-
-    def update_weather_forecast_restapi(self):
-        """Update weather forecast from restapi"""
         # Read weather data
         is_lap_type = api.read.session.lap_type()
         forecast_info = get_forecast_info(api.read.session.session_type())

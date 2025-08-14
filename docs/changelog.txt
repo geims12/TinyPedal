@@ -1,3 +1,149 @@
+WIP
+-----------------------------
+* [New]Check for Updates
+  - Add "Check For Updates On Startup" global option (requested by user "coasting-nc"), which enables automatically checking for updates on startup, and displays notification message in main window.
+    This option is enabled by default, and can be disabled in "Application" dialog from "Config" menu in main window.
+    Note, this option is checked only once per startup, and notification message will only be displayed if new updates is available.
+    This option only checks for new updates info, it does not provide updates downloading or installing feature.
+  - Add "Check for Updates" option to "Help" menu in main window, which allows to manually check for updates. This option always displays notification message in main window.
+  - Add notification message for "Check for Updates" in main window. Click on the notification message will bring up a menu, where user can click "View Updates On GitHub" to open "Latest Releases" page in web browser, or "Dismiss" the message.
+  - Add "Check for Updates" message to console output.
+
+* Relative finish order, Track map Widget
+  - Fixed a typo with option name "predication" (thanks to user "PeterVRC" for reports).
+
+2.33.0 (2025-08-10)
+-----------------------------
+* Fuel Calculator
+  - [New]Add "pit stop preview" bar on the left side of calculator panel, which visualizes pit stops as blue marks and stint laps as grey marks.
+    Each pit stop mark shows a reference lap completion number. Total estimated number of race laps is displayed at bottom of the bar.
+    Note, when "Energy consumption" value is higher than zero, pit stops and stint laps from preview bar will be calculated based on energy usage. Stint lap mark may not be displayed if there is not enough space to draw.
+  - "Starting Fuel" and "Starting Energy" values now affect "total pit stops" outcome, as well as visualized on "pit stop preview" bar.
+
+* RestAPI Module
+  - Add togglable options for each accessible data from Rest API.
+  - Add "enable_garage_setup_info" option, which enables access to "garage setup" data (RF2 & LMU). This is required for accessing various vehicle setup data.
+  - Add "enable_session_info" option, which enables access to "session" data (RF2 & LMU). This is required for accessing various session data, such as time-scale.
+  - Add "enable_weather_info" option, which enables access to "weather" data (RF2 & LMU). This is required for showing weather forecast.
+  - Add "enable_vehicle_info" option, which enables access to "vehicle" data (LMU only). This is essential for accessing "virtual energy", "brake wear", "vehicle damage", "pit stop timing" data.
+
+* Battery, Gear Widget
+  - Add "high_battery_threshold, low_battery_threshold" options (requested by user "H4dro"), which set percentage threshold for displaying low or high battery charge warning indicator.
+    Default high threshold is "95" percent (default color purple), low threshold is "10" percent (default color red).
+  - Changed default background color to blue (old color was black) for normal battery charge level for Battery Widget. Existing setting won't be affected.
+
+* Track map Widget
+  - [New]Add "show_lap_difference_outline" option (requested by user "Woodee"), which shows outline color based on lap difference (ahead or behind) between player and opponents. This option is disabled by default.
+    Note, both outline color and width can be customized.
+
+* Misc
+  - Fixed a rare issue where module data would not update after restarted module.
+  - Fixed an issue where virtual energy usage from "Lap time history Widget" sometimes fails to load due to desync.
+  - Various optimization.
+
+2.32.1 (2025-07-26)
+-----------------------------
+* Relative, Rivals, Standings Widget
+  - [New]Add "show_energy_remaining" option (frequently requested by community), which shows remaining virtual energy reading in percentage from each driver, with 4 different states:
+    - Unavailable: virtual energy reading is not available currently, default color grey.
+    - High: above 30% remaining, default color green.
+    - low: from 30% to 10% remaining, default color orange.
+    - critical: 10% or lower remaining, default color red.
+  - Known limitation with remaining virtual energy readings:
+    Currently, remaining virtual energy data from LMU's Rest API is updated only when driver completes a lap, which means the data from API will not change during a lap, but only at the moment a lap is done by a driver. And due to this, the data will not tell how much energy was refilled in pit until the driver finished his pit out lap. This makes the data less useful by itself.
+    To workaround this API data limitation, a special interpolation algorithm is implemented, which enables accurate estimates to remaining energy progressively during a lap for each driver. The average accuracy of estimation is within 1% (as from the extensive testing results during the past few weeks).
+    Some cases where interpolation may not be applied:
+    - Interpolation may require at least 1 full lap (not counting pit out lap) done before it can take effect.
+    - During pit stop, refilled energy reading may not be updated until driver finishes his pit out lap (as mentioned earlier), which means old energy reading persists during pit out lap and would result wrong estimates with interpolation. For this reason, interpolation is disabled during pit out lap.
+    In either case, just wait another lap and energy readings will be synchronized.
+
+* RestAPI Module
+  - [New]Now reads "remaining energy" data from LMU Rest API. This data is processed and used for Relative, Rivals, Standings Widgets.
+  - Add "enable_energy_remaining" option, which enables access to "remaining energy" data from LMU Rest API.
+
+* Vehicle Brand Editor
+  - Add "Primary" and "Alternative" sources for importing vehicle brand data from LMU Rest API. The "Primary" source now allows to import brands from both original and custom vehicle skins, just select "LMU Rest API (Primary)" from "import from" menu to import them. The "Alternative" source (normally not required) is provided in case if some brands are missing from "Primary" source.
+    Note, auto-importing function is not provided currently for stability and performance concerns, as importing is very expensive operation that involves large data set processing.
+
+2.32.0 (2025-07-23)
+-----------------------------
+* [New]Widget Snapping
+  - Add widget snapping and alignment (implemented by @nikidigi), which allows to snap and align widget to other widgets or screen edges. Snapping is activated by holding down "Ctrl" key while moving widget.
+  - Add "snap_distance" and "snap_gap" options in global user config, which can be accessed from "Config > Application" in main menu.
+  - Add Right-Click "context menu" for each overlay widget, which enables additional options:
+    Center horizontally: align widget to the center of active screen horizontally.
+    Center vertically: align widget to the center of active screen vertically.
+
+* Lap time history Widget
+  - Now loads and shows lap history data from corresponding "Consumption History" file.
+
+* Standings Widget
+  - Renamed "show_time_gap_from_class_best" option to "show_time_gap_from_same_class", which now also shows time gap behind the same class leader in race session (requested by user "ssalamon"). This option is enabled by default, and only takes effect while "enable_multi_class_split_mode" is enabled.
+  - Fixed a calculation error with time interval between each driver.
+
+* RestAPI Module
+  - Add individual hard-coded "minimum update interval" for each different url resources, where some resources are accessed less frequently than others for conserving resource.
+  - Fixed an issue where accessing extremely large dataset may fail sometimes.
+
+* Stats Module
+  - Fixed an issue that would cause incorrect best lap time saved due to network desync.
+
+* Misc
+  - Updated README with pyside2 (qtmultimedia) dependency info for Linux (by @berarma).
+  - Add new contributor "nikidigi" to contributors.md.
+  - Various optimization.
+
+2.31.0 (2025-07-08)
+-----------------------------
+* Fuel Calculator
+  - [New]Add "Tyre" column to history table, which lists "average tyre tread wear" data that can be used for tyre wear calculation.
+  - [New]Add tyre tread wear and lifespan calculation in laps, minutes, stints, which helps to plan tyre usage for multi-stint race. See "Fuel Calculator" section in User Guide for details.
+  - [New]Add "Max stint laps" & "Max stint minutes" calculation, which shows maximum laps and minutes can run per stint based on "Tank capacity" value (or 100% capacity for virtual energy).
+
+* Consumption History
+  - [New]Add "average tyre tread wear" logging via Fuel Module, which is used in Fuel Calculator.
+
+* Wheels Module
+  - Brake and tyre wear calculation is now handled by Wheels Module.
+  - [New]Add delta wear calculation for accurately estimating tyre wear difference per lap.
+  - [New]Add "minimum_delta_distance" option for delta wear data recording.
+
+* Tyre Wear Widget
+  - [New]Add "show_end_stint_remaining" option, which shows estimated total remaining tyre tread at the end of current stint. This option helps to determine whether there is enough tread for current or more stints. Negative reading indicates that there will not be enough tyre tread remaining at the end of current stint.
+  - "show_wear_difference" option now shows estimated tyre wear difference per lap (at least one valid lap is required).
+  - Removed "show_live_wear_difference", "freeze_duration" options. 
+
+* Brake Wear Widget
+  - "show_wear_difference" option now shows estimated brake wear difference per lap (at least one valid lap is required).
+  - Removed "show_live_wear_difference", "freeze_duration" options. 
+
+* Fuel, Virtual Energy Widget
+  - [New]Add "show_low_fuel_warning_flash" and "show_low_energy_warning_flash" options (requested by users "ebeninca"), which show warning flash effect while on low fuel or low virtual energy. This option is enabled by default.
+    This warning flash effect plays only a limited number of times, with highlight duration and interval that can be customized via "number_of_warning_flashes, warning_flash_highlight_duration, warning_flash_interval" options.
+    Default number of flashes is 10 times, with a highlight duration of 0.4s, and a cooldown interval of 0.4s in-between.
+
+* Misc
+  - Reload module and widget automatically after saving or applying changes in editor.
+  - "enable_high_dpi_scaling" option is now enabled by default for new user.
+  - Fixed global locale setting for correctly displaying digits and decimal separator in certain system that uses special characters.
+  - Auto load preset function now checks load-state only once when player enters track.
+  - Various optimization.
+
+2.30.1 (2025-06-12)
+-----------------------------
+* Major change to API accessing
+  - Updated URL addresses for accessing data from LMU's Rest API (due to changes from June update), including new penalty time data that used for accurate pit time estimate.
+  - Virtual energy, brake wear, vehicle damage, pit stop related data are now read from "RepairAndRefuel" URL address (same as in v2.28.1).
+    Important note:
+    "RepairAndRefuel" URL address previously was known to have chance to cause MFD pitstop menu flickering issue if accessed at high frequency. This flickering issue has been acknowledged by game developer, but not yet fixed by game.
+    "RepairAndRefuel" is the only address for accessing those important data from LMU Rest API (as of LMU June update), currently there is no other alternatives.
+    This "flickering issue" should not be a concern for user using only TinyPedal, as the default "update interval" in RestAPI Module is set on 100ms.
+    For user concerned or experienced with this issue, you can either increase the value of "update interval" in RestAPI Module (such as "500" or "1000"); or, disable "RestAPI Module" entirely (which then those crucial data will not be available).
+    Also note:
+    There are currently other third-party APPs or Plugins that also have access to this "RepairAndRefuel" URL address, and running them at the same may have higher chance to trigger MFD "flickering issue".
+  - Removed "enable_pit_strategy_access" option from RestAPI Module, this option no longer works due to game API changes.
+  - Various improvements and optimization to game API accessing.
+
 2.30.0 (2025-06-04)
 -----------------------------
 * Major change
@@ -103,7 +249,7 @@
   - Now processes user pit stop setting data from LMU Rest API for pit stop timing calculation.
 
 * Track map Widget
-  - Now reads pit-exit position data from Mapping Module for calculating pit-out predication.
+  - Now reads pit-exit position data from Mapping Module for calculating pit-out prediction.
 
 * Misc
   - Updated User Guide info for Tracks Preset, Track Info Editor, Pit stop estimate Widget.
@@ -387,20 +533,20 @@
     And since each track has different pit out line location,
     it is required to "pit out" at least "once per session" to mark the correct pit out line location.
     This can be easily done by driving out of pit lane.
-  - Add "number_of_predication" option that sets number of pit out predication to display.
+  - Add "number_of_prediction" option that sets number of pit out prediction to display.
     Value range is limited in "1" to "20".
-  - Add "pitstop_duration_minimum" option that sets pit stop duration (in seconds) of first predication.
+  - Add "pitstop_duration_minimum" option that sets pit stop duration (in seconds) of first prediction.
   - Add "pitstop_duration_increment" option that sets each pit stop duration (in seconds) increment
-    after previous predication. Default increment is "10" seconds.
-    Note, each time when pit stop duration of the nearest predication exceeded current pit stop timer,
-    the predication circle will be removed, and a new predication circle will be appended
-    with pit stop duration increment after the last predication.
+    after previous prediction. Default increment is "10" seconds.
+    Note, each time when pit stop duration of the nearest prediction exceeded current pit stop timer,
+    the prediction circle will be removed, and a new prediction circle will be appended
+    with pit stop duration increment after the last prediction.
   - Add "pitout_time_offset" option that sets amount time offset (in seconds) for catching up with
     vehicle speed after pit out. Default is "3" seconds.
     Note, this value is important for accurate prediction, as initial vehicle speed is much slower after pit out,
     so extra time is needed for driver to catch up, and also affected by pit out line location.
     For most tracks, this extra time after pit out is roughly within "1" to "5" seconds,
-  - Add "show_pitstop_duration" option that shows pit stop duration reading on top of each predication circle.
+  - Add "show_pitstop_duration" option that shows pit stop duration reading on top of each prediction circle.
   - Add "show_position_in_class" option, which shows position in class while "enable_multi_class_styling"
     is also enabled, otherwise this option has no effect.
     While "enable_multi_class_styling" is enabled, disable this option to show overall standings with

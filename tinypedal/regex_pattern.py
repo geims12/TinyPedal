@@ -25,7 +25,7 @@ import re
 # Compiled regex function
 rex_hex_color = re.compile(r"^#[0-9A-F]{3}$|^#[0-9A-F]{6}$|^#[0-9A-F]{8}$", flags=re.IGNORECASE).search
 rex_invalid_char = re.compile(r'[\\/:*?"<>|]').sub
-rex_number_extract = re.compile(r"\d*\.?\d+").search
+rex_number_extract = re.compile(r"\d*\.?\d+")
 
 # Bool
 CFG_BOOL = (
@@ -34,6 +34,7 @@ CFG_BOOL = (
     "^auto_hide$|"
     "^auto_hide_if_not_available$|"
     "^auto_hide_in_private_qualifying$|"
+    "^check_for_updates_on_startup$|"
     "^fixed_position$|"
     "^minimize_to_tray$|"
     "^remember_position$|"
@@ -106,6 +107,8 @@ CFG_INTEGER = (
     "^parts_max_width$|"
     "^position_x$|"
     "^position_y$|"
+    "^snap_distance$|"
+    "^snap_gap$|"
     "^stint_history_count$|"
     "^window_width$|"
     "^window_height$|"

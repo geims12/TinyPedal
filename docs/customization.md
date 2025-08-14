@@ -35,27 +35,27 @@ Click `Transfer` button to transfer settings from currently loaded preset to ano
 
 `Right-Click` on a preset name in `Preset` tab opens up a context menu that provides additional preset file management options:
 
-* Lock Preset  
+* Lock Preset
     Lock selected preset, which prevents any changes that made through TinyPedal from saving to locked preset file. APP `version` tag will be attached to the preset that is locked with.
 
     Note, this feature does not prevent user from modifying or deleting locked preset file by other means. Locked preset file info is stored in `config.lock` file in [Global User Configuration](#global-user-configuration) folder.
 
-* Unlock Preset  
+* Unlock Preset
     Unlock selected preset.
 
-* Set primary for *  
+* Set primary for *
     Add `primary sim` tag to selected preset, which will be auto loaded by `Auto load preset` system. Note, a single preset can have tags from multiple games.
 
-* Clear primary tag  
+* Clear primary tag
     Clear all tags from selected preset.
 
-* Duplicate  
+* Duplicate
     Duplicate selected preset with a new name.
 
-* Rename  
+* Rename
     Rename selected preset with a new name. This option is not available for locked preset.
 
-* Delete  
+* Delete
     Delete selected preset with confirmation. This option is not available for locked preset.
 
 [**`Back to Top`**](#)
@@ -217,7 +217,7 @@ Data recording is handled by [Fuel Module](#fuel-module).
 ## Consumption history
 Consumption history data is stored as `CSV` format (.consumption extension) under `TinyPedal\deltabest` folder (default). Those files can be opened in spreadsheet or notepad programs.
 
-Consumption history data stores lap time and fuel consumption data per `track and vehicle class`, which can be loaded in [Fuel Calculator](#fuel-calculator). Up to 100 most recent lap entries are saved per `track and vehicle class`. Data recording is handled by [Fuel Module](#fuel-module).
+Consumption history data stores lap time, fuel consumption, battery charge, tyre wear usage data per `track and vehicle class`, which can be loaded in [Fuel Calculator](#fuel-calculator). Up to 100 most recent lap entries are saved per `track and vehicle class`. Data recording is handled by [Fuel Module](#fuel-module).
 
 [**`Back to Top`**](#)
 
@@ -269,7 +269,7 @@ TinyPedal supports user-defined brand logo image in `PNG` format (.png extension
 
 Note: TinyPedal does not provide brand logo image assets, it is up to user to prepare images. Maximum `PNG` file size is limited to `1MB`.
 
-How to prepare brand logo image:  
+How to prepare brand logo image:
 1. Brand logo image should have all transparent borders cropped. For example, in `GIMP` this can be done by selecting `Image` > `Crop to Content`.
 2. Make sure image dimension is not too big, usually around 100 pixel width or height is good enough. Bigger dimension may consume more RAM or exceed maximum supported file size.
 3. Save image to `TinyPedal\brandlogo` folder, image filename must match corresponding `brand name` that defined in [Vehicle Brand Editor](#vehicle-brand-editor). For cross-platform compatibility, filename matching is set to be case-sensitive, make sure filename has the same upper or lower case as set in `brand name`.
@@ -388,6 +388,15 @@ Set amount decimal places to keep.
     show_at_startup
 Show main window at startup, otherwise hides to tray icon.
 
+    check_for_updates_on_startup
+Enable automatically checking for updates on startup, and display notification message in main window. This option is enabled by default.
+
+Click on the notification message will bring up a menu, where user can click `View Updates On GitHub` to open `Latest Releases` page in web browser, or `Dismiss` the message.
+
+Note, this option is checked only once per startup, and notification message will only be displayed if new updates is available. This option only checks for new updates info, it does not provide updates downloading or installing feature.
+
+User can also manually check for updates any time by accessing `Check for Updates` option from `Help` menu in main window.
+
     minimize_to_tray
 Minimize to tray when user clicks `X` close button.
 
@@ -398,7 +407,7 @@ Remember main window last position.
 Remember main window last size.
 
     enable_high_dpi_scaling
-Enable window dialog and overlay widget auto-scaling under high DPI screen resolution. This option requires restarting TinyPedal to take effect. This option is disabled by default.
+Enable window dialog and overlay widget auto-scaling under high DPI screen resolution. This option requires restarting TinyPedal to take effect. This option is enabled by default.
 
 High DPI scaling mode can be quickly toggled via `Scale` button on main window status bar.
 
@@ -415,6 +424,12 @@ This option is disabled by default.
 
     show_confirmation_for_batch_toggle
 Show confirmation dialog for enabling or disabling all widgets or modules. This option is enabled by default.
+
+    snap_distance
+The distance (in pixels) at which the widget will snap to screen edges or other widgets. Default `10`. Hold `Ctrl` to enable snapping.
+
+    snap_gap
+The gap (in pixels) to leave between the widget and the snapped widget edges. Default `0`.
 
     grid_move_size
 Set grid size for grid move, value in pixel. Default is `8` pixel. Minimum value is limited to `1`.
@@ -652,12 +667,17 @@ Enable `Manually Select Pace Notes File` check box to disable auto-file-name mat
 ## Fuel calculator
 **Fuel calculator can be accessed from `Tools` menu in main window.**
 
-On the left side is calculation panel, which handles `fuel` and `virtual energy` usage calculation and results display.
-
 Fuel value and unit symbol depend on `Fuel Unit` setting from [Units](#units) config dialog, `L` = liter, `gal` = gallon. Virtual energy unit is `%` = percentage. Note, after changed `Fuel Unit` setting, it is required to close and reopen `Fuel calculator` in order to update units info for calculation.
 
-On the right side is fuel consumption history table, which lists `lap number`, `lap time`, `fuel consumption`, `virtual energy consumption`, `battery drain`, `battery regen`, `tank capacity` data from [Consumption History](#consumption-history) data.
-Invalid lap time or consumption data is highlighted in red.
+    Calculation panel
+On the left side is calculation panel, which handles `fuel` and `virtual energy` usage calculation and results display.
+
+This panel also includes a vertical `pit stop preview` bar on the left, which visualizes pit stops as blue marks and stint laps as grey marks. Each pit stop mark shows a reference lap completion number. Total estimated number of race laps is displayed at bottom of the bar.
+
+Note, when `Energy consumption` value is higher than zero, pit stops and stint laps from preview bar will be calculated based on energy usage. Stint lap mark may not be displayed if there is not enough space to draw.
+
+    Consumption history table
+On the right side is consumption history table, which lists `lap number`, `lap time`, `fuel consumption`, `virtual energy consumption`, `battery drain`, `battery regen`, `average tyre tread wear`, `tank capacity` data from [Consumption History](#consumption-history) data. Invalid lap time or consumption data is highlighted in red.
 
 Click `Load Live` button to load or update consumption history from live session to history table and automatically fill in latest data to calculator.
 
@@ -665,7 +685,7 @@ Click `Load File` button to load data from specific consumption history file to 
 
 Loaded data source and track and class name will be displayed on status bar.
 
-Select one or more `Time`, `Fuel`, `Energy`, `Tank` values from history table and click `Add selected data` button to send value to calculator.
+Select one or more `Time`, `Fuel`, `Energy`, `Tyre`, `Tank` values from history table and click `Add selected data` button to send value to calculator.
 
 Select multiple values from history table and click `Add selected data` button to calculate average reading of selected values and send to calculator.
 
@@ -700,25 +720,42 @@ Set average pit stop time in seconds.
 Show total required fuel or energy to finish race. First value is raw reading with decimal places, second value behind `≈` sign is rounded up integer reading.
 
     End stint fuel, End stint energy
-Show remaining fuel or energy at the end of stint or race.
+Show remaining fuel or energy at the end of stint.
 
-    Total Pit stops
-Show total number of pit stops required to finish race. First value is raw reading with decimal places, second value behind `≈` sign is rounded up integer reading. Note, sometimes when `Average pit seconds` is set to longer duration, ceiling integer reading may be rounded up `2` units higher than raw reading, this is not an error. For example, it may show `5.978 ≈ 7` instead of `5.978 ≈ 6`, this is because when calculating from `6` pit stops, due to less amount time spent in pit stop compare to `7`, more fuel is required per pit stop which would exceed tank capacity, hence calculator adds 1 more pit stop.
+    Total pit stops
+Show total number of pit stops required to finish race. First value is raw reading with decimal places, second value behind `≈` sign is rounded up integer reading.
+
+Note, sometimes when `Average pit seconds` is set to longer duration, ceiling integer reading may be rounded up `2` units higher than raw reading, this is not an error. For example, it may show `5.978 ≈ 7` instead of `5.978 ≈ 6`, this is because when calculating from `6` pit stops, due to less amount time spent in pit stop compare to `7`, more fuel is required per pit stop which would exceed tank capacity, hence calculator adds 1 more pit stop.
 
     One less pit stop
 Show theoretical fuel or energy consumption in order to make one less pit stop.
 
-    Total laps
-Show total laps can run based on `Total race fuel` or `Total race energy` value.
+    Total laps, Total minutes
+Show total laps and minutes can run based on `Total race fuel` or `Total race energy` value.
 
-    Total minutes
-Show total minutes can run based on `Total race fuel` or `Total race energy` value.
+    Max stint laps, Max stint minutes
+Show maximum laps and minutes can run per stint based on `Tank capacity` value (or 100% capacity for virtual energy).
 
     Starting fuel, Starting energy
-Set starting fuel or energy. This value is only used for calculating `Average refueling` or `Average replenishing` per pit stop. Maximum value cannot exceed `Tank capacity` for fuel, or `100%` for energy. If value is set to `0`, `Tank capacity` value will be used as starting fuel for `Average refueling` calculation.
+Set amount fuel or energy to carry at the starting of race (first stint). This value affects `Total race fuel (or energy)` and `Total pit stops` calculation, and is used for calculating `Average refueling` or `Average replenishing` per pit stop. Maximum value cannot exceed `Tank capacity` for fuel (or `100%` for energy). If value is set to `0` (default), `Tank capacity` value will be used as starting fuel (or `100%` for starting energy) for `Average refueling` calculation.
 
     Average refueling, Average replenishing
 Show average refueling or replenishing per pit stop, and display warning color if value exceeds `Tank capacity` (fuel) or `100%` (energy).
+
+    Starting tyre tread
+Set average starting tyre tread (percent). For example, 100% for new tyres, and less for worn tyres.
+
+    Tread wear per lap
+Set average tyre tread wear (percent) per lap. This value can be retrieved from `Tyre` column.
+
+    Tread wear per stint
+Show total average tyre tread wear (percent) per stint. Note, while virtual energy is available, this value will be calculated based on the least `max stint laps` between fuel and virtual energy.
+
+    Lifespan laps, Lifespan minutes
+Show total tyre lifespan in laps and minutes based on `tread wear per lap` and `lap time`.
+
+    Lifespan stints
+Show estimated tyre lifespan in number of stints. Note, while virtual energy is available, this value will be calculated based on the least `max stint laps` between fuel and virtual energy.
 
 [**`Back to Top`**](#)
 
@@ -782,6 +819,10 @@ For brand logo image preparation, see [Brand Logo](#brand-logo) section.
 
 To import vehicle brand data from `Rest API`, click `Import from` menu, and select either `RF2 Rest API` or `LMU Rest API`. Note, game updates may introduce new vehicles, it is recommended to re-import after each game update to keep brand info updated.
 
+Note, there are currently two sources for importing from `LMU Rest API`:
+- Primary: allows to import brands from both original and custom vehicle skins.
+- Alternative: may allow to import some brands that are missing from Primary source. This is normally not required.
+
 **Important notes**
 
 Game must be running in order to import from `Rest API`. Newly imported data will be appended on top of existing data, existing data will not be changed.
@@ -797,6 +838,7 @@ Alternatively, to import vehicle brand data from vehicle `JSON` file, click `Imp
 
     How to manually export vehicle brand data from LMU Rest API:
     1. Start LMU, then open following link in web browser:
+    localhost:6397/rest/race/car
     localhost:6397/rest/sessions/getAllVehicles
     2. Click "Save" button which saves vehicle data to JSON file.
 
@@ -994,11 +1036,11 @@ Note, by default the editor starts in `Pace Notes` edit mode as displayed in sta
 
 **Important note, the editor does not provide `undo` function, it is recommended to save file before doing heavy modification.**
 
-The editor consists of two panel views:  
+The editor consists of two panel views:
 * Left panel is the `Track Map Viewer`, which can be used to visualize track map and providing analytic info for assisting notes creation. See [Track Map Viewer](#track-map-viewer) section for details.
 * Right panel is the track and pace notes editor, which allows to create, open, and save track or pace notes file.
 
-The table view consists of multiple columns: 
+The table view consists of multiple columns:
 * `distance` column defines track position (in meters) of a note line.
 * `pace note` column (in Pace Notes edit mode) defines `pace note` name that is used to match pace note sound file name. Because windows system excludes some special characters from used in file name, the `pace note` column will automatically strip off invalid characters. Note, DO NOT write file extension (format) in `pace note` column. File extension should be set in `Pace Notes` control panel tab from main window.
 * `track note` column (in Track Notes edit mode) defines track `corner name` or `section name` or any thing user wish to note.
@@ -1014,7 +1056,7 @@ To save notes file to other formats for used in other games, select a file forma
 
 To hide map viewer, click `Hide Map`. To show map viewer, click `Show Map`.
 
-To edit metadata info, click `Info`. Metadata info provides optional info to notes:  
+To edit metadata info, click `Info`. Metadata info provides optional info to notes:
 * `Title` of notes.
 * `Author` of notes.
 * `Date` when notes created or modified.
@@ -1052,7 +1094,7 @@ Modules provide important data that updated in real-time for other widgets. Widg
 Enable delta module.
 
     minimum_delta_distance
-Set minimum recording distance (in meters) between each delta sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
+Set minimum recording distance (in meters) between each lap time sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
 
     delta_smoothing_samples
 Set number of samples for delta data smoothing calculation using exponential moving average (EMA) method. Value range in `1` to `100`. Higher value results more smoothness, but may lose accuracy. Default is `30` samples. Set to `1` to disable smoothing.
@@ -1073,7 +1115,7 @@ Set additional margin for laptime pace that cannot exceed the sum of previous `l
 Enable energy module.
 
     minimum_delta_distance
-Set minimum recording distance (in meters) between each delta sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
+Set minimum recording distance (in meters) between each virtual energy usage sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
 
 [**`Back to Top`**](#)
 
@@ -1112,7 +1154,7 @@ Set time delay in seconds for resetting max braking rate. Default is `60` second
 Enable fuel module.
 
     minimum_delta_distance
-Set minimum recording distance (in meters) between each delta sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
+Set minimum recording distance (in meters) between each fuel usage sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
 
 [**`Back to Top`**](#)
 
@@ -1124,7 +1166,7 @@ Set minimum recording distance (in meters) between each delta sample. Default va
 Enable hybrid module.
 
     minimum_delta_distance
-Set minimum recording distance (in meters) between each delta sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
+Set minimum recording distance (in meters) between each battery charge usage sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
 
 [**`Back to Top`**](#)
 
@@ -1179,8 +1221,20 @@ Set number of attempts to retry connection. Value range in `0` to `10`. Default 
     connection_retry_delay
 Set time delay in seconds to retry connection. Value range in `0` to `60`. Default is `1` second.
 
-    enable_pit_strategy_access
-Set `false` to turn off "pit strategy" data accessing completely. Note, [Pit stop estimate](#pit-stop-estimate) Widget will not be able to display pit data if this option is turned off.
+    enable_energy_remaining
+Enable access to `remaining energy` data (LMU only). This is required for showing remaining energy data in widgets such as Relative, Rivals, Standings.
+
+    enable_garage_setup_info
+Enable access to `garage setup` data (RF2 & LMU). This is required for accessing various vehicle setup data.
+
+    enable_session_info
+Enable access to `session` data (RF2 & LMU). This is required for accessing various session data, such as time-scale.
+
+    enable_vehicle_info
+Enable access to `vehicle` data (LMU only). This is essential for accessing `virtual energy`, `brake wear`, `vehicle damage`, `pit stop timing` data.
+
+    enable_weather_info
+Enable access to `weather` data (RF2 & LMU). This is required for showing weather forecast.
 
 [**`Back to Top`**](#)
 
@@ -1236,7 +1290,7 @@ Lap difference (percentage) threshold for tagging opponents as behind. Default i
 
 
 ## Wheels module
-**This module provides wheel radius and slip ratio data.**
+**This module provides wheel radius, slip ratio, tyre wear, brake wear data.**
 
     minimum_axle_rotation
 Set minimum axle rotation (radians per second) for calculating wheel radius and differential locking percent. Default value is `4`.
@@ -1247,11 +1301,18 @@ Set maximum rotation difference between left or right wheel rotation and same ax
     cornering_radius_sampling_interval
 Set position sampling interval for cornering radius calculation. Value range in `5` to `100`. Default sampling interval is `10`, which is roughly 200ms interval between each recorded position. Higher value may result inaccuracy. Note, this option does not affect position recording interval.
 
+    minimum_delta_distance
+Set minimum recording distance (in meters) between each tyre wear sample. Default value is `5` meters. Lower value may result more samples recorded and bigger file size; higher value may result less samples recorded and inaccuracy. Recommended value range in `5` to `10` meters.
+
 [**`Back to Top`**](#)
 
 
 # Widgets
 Each widget can be configured by accessing `Config` button from `Widget` tab in main window.
+
+Widget context menu can be accessed by `Right-Click` on widget, which provides additional options:
+- Center horizontally: align widget to the center of active screen horizontally.
+- Center vertically: align widget to the center of active screen vertically.
 
 [**`Back to Top`**](#)
 
@@ -1280,8 +1341,8 @@ Note, at least one full lap (excludes pit-out or first lap) is required to gener
     show_activation_timer
 Show electric boost motor activation timer.
 
-    low_battery_threshold
-Set percentage threshold for low battery charge warning indicator.
+    high_battery_threshold, low_battery_threshold
+Set percentage threshold for displaying low or high battery charge warning indicator. Default high threshold is `95` percent (default color purple), low threshold is `10` percent (default color red).
 
     freeze_duration
 Set freeze duration (seconds) for displaying previous lap total drained/regenerated battery charge after crossing finish line. Value range in `0` to `30` seconds. Default is `10` seconds.
@@ -1411,13 +1472,7 @@ Some reference brake failure thickness threshold:
 Show total remaining brake in percentage that changes color according to wear.
 
     show_wear_difference
-Show total brake wear difference of previous lap.
-
-    show_live_wear_difference
-Show brake wear difference of current lap that constantly updated.
-
-    freeze_duration
-Set freeze duration (seconds) for displaying previous lap brake wear if `show_live_wear_difference` is enabled. Value range in `0` to `30` seconds. Default is `10` seconds.
+Show estimated brake wear difference per lap (at least one valid lap is required).
 
     show_lifespan_laps
 Show estimated brake lifespan in laps.
@@ -1467,7 +1522,7 @@ Show compass directions with three-figure bearings that matches game's cardinal 
 Show elevation difference in game's coordinate system.
 
     show_odometer
-Show odometer that displays total driven distance of local player. 
+Show odometer that displays total driven distance of local player.
 
     odometer_maximum_digits
 Set maximum number of display digits.
@@ -2006,6 +2061,18 @@ Set amount lap threshold to show low fuel indicator when total completable laps 
     warning_color_low_fuel
 Set low fuel color indicator, which changes widget background color when there is just 2 laps of fuel left.
 
+    show_low_fuel_warning_flash
+Show low fuel warning flash effect when below `low_fuel_lap_threshold`.
+
+    number_of_warning_flashes
+Set number of warning flashes that will be played for a limited number of times. Default is `10` flashes. Minimum value is limited to `3`.
+
+    warning_flash_highlight_duration
+Set color highlight duration for each warning flash. Default is `0.4` seconds. Minimum value is limited to `0.2`.
+
+    warning_flash_interval
+Set minimum time interval between each warning flash. Default is `0.4` seconds. Minimum value is limited to `0.2`.
+
     show_fuel_level_bar
 Show visualized horizontal fuel level bar.
 
@@ -2084,6 +2151,9 @@ Invert battery bar progression.
 
     battery_bar_height
 Set battery bar height in pixels.
+
+    high_battery_threshold, low_battery_threshold
+Set percentage threshold for displaying low or high battery charge warning indicator. Default high threshold is `95` percent (default color purple), low threshold is `10` percent (default color red).
 
     show_battery_reading
 Show battery charge (in percentage) reading text on battery bar.
@@ -2213,6 +2283,8 @@ Set percentage threshold for triggering wheel slip warning under acceleration. `
 
 ## Lap time history
 **This widget displays lap time history info.**
+
+This widget consists of four columns from left to right (default order): `Lap number`, `Lap time`, `Fuel or virtual energy consumption per lap`, `Average tyre wear per lap (percent)`. History data are loaded and updated from corresponding [Consumption History](#consumption-history) file.
 
     layout
 2 layouts are available: `0` = vertical layout, `1` = reversed vertical layout.
@@ -2417,7 +2489,7 @@ Note, for unscheduled pit stop (without requesting pit), game sometimes will add
 Show maximum total random delay which game may add on top of pit stop time. For example, if estimated pit stop time is `12.0`s, and maximum delay is `+3.0`s, then final pit stop time will be between `12.0`s and `15.0`s.
 
     stop_go_penalty_time
-Set stop go penalty time in seconds. Default value is `10` seconds.
+Set stop go penalty time in seconds. Default value is `10` seconds. Note, this value is only used if penalty time data is not available from game API.
 
     additional_pitstop_time
 Set additional pit stop time that is not part of `pass_duration` or `stop_duration`. Default value is `2` seconds, which is the average time it takes to decelerate and accelerate towards and away from pit spot.
@@ -2690,7 +2762,7 @@ Simple example: in time-type race, at the moment when session timer ended, assum
 
 ---
 
-The table consists of 5 fixed rows, 1 optional row, 3 fixed columns, and 10 optional predication columns that can be customized. Example:
+The table consists of 5 fixed rows, 1 optional row, 3 fixed columns, and 10 optional prediction columns that can be customized. Example:
 
 | TIME |   0s  |  30s  |  40s  |  50s  |  60s  |  54s  |
 |:----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
@@ -2704,9 +2776,9 @@ First and fourth rows, starting from second cell, show estimated `leader's pit t
 
 Second and third rows, starting from second cell, show estimated `leader's final lap progress` (fraction of lap) and `local player's final lap progress` that depend on current session type:
 * For `TIME` type race, it shows final lap progress at the moment when session timer ended.
-* For `LAPS` type race, it shows relative final total lap difference between leader and local player.  
-Leader's value from second row second cell always shows `integer value`, because laps-type race has no timer, and the end of race is determined at the moment when leader crossed finish line, which can only be full laps.  
-Local player's value from third row second cell always shows final lap progress relative to leader's value from second row second cell.  
+* For `LAPS` type race, it shows relative final total lap difference between leader and local player.
+Leader's value from second row second cell always shows `integer value`, because laps-type race has no timer, and the end of race is determined at the moment when leader crossed finish line, which can only be full laps.
+Local player's value from third row second cell always shows final lap progress relative to leader's value from second row second cell.
 Both leader's and local player's `final lap progress` values starting from third cell are offset from second cell of same row.
 
 Third row, first cell shows `relative lap difference` between leader and local player that is calculated from lap time pace difference of both players, which can be used to determine whether leader has the chance to overtake local player on final lap. For example:
@@ -2715,7 +2787,7 @@ Third row, first cell shows `relative lap difference` between leader and local p
 
 Fifth row, first cell shows refilling type in `FUEL` or `NRG` (if virtual energy available). Starting from second cell, shows estimated `local player's refilling` that depends on current session type:
 * For `TIME` type race, refilling value from each column is calculated based on local player's current `laptime pace`, `consumption`, and `local player's final lap progress` from third row of same column. Note, each refilling value has no relation to `leader's final lap progress` value from same column. Refilling value from `0s` column gives same reading as seen from `Fuel` or `Virtual Energy` Widget in time-type race.
-* For `LAPS` type race, only refilling value from `0s` column is calculated and displayed according to leader's `leader's final lap progress` value.  
+* For `LAPS` type race, only refilling value from `0s` column is calculated and displayed according to leader's `leader's final lap progress` value.
 Other column values are not displayed, this is done to avoid confusion. Because unlike `TIME` type race where all `final lap progress` values are within `0.0` to `1.0` range, in `LAPS` type race values can exceed `1.0` or below `0.0` (negative), which the number of possible lap differences would increase exponentially and not possible to list all of them in the widget.
 
 Sixth row (optional), first cell shows `number of extra laps` for extra refilling display. Starting from second cell, shows estimated `extra refilling` value that depends on `local player's refilling` value and `number of extra laps` setting. Each extra refilling value equals `extra laps of consumption` plus `local player's refilling` value of same column. Those values save the trouble from manual calculation in case there will be extra laps.
@@ -2726,7 +2798,7 @@ See `TIME` or `LAPS` type race example usages below for details.
 
 **Important notes**
 
-* Predication accuracy depends on many variables and is meant for final stint estimate. Such as laptime pace, pit time, penalties, weather condition, safety car, yellow flag, can all affect predication accuracy. It requires at least 2-3 laps to get sensible readings, and more laps to have better accuracy.
+* Prediction accuracy depends on many variables and is meant for final stint estimate. Such as laptime pace, pit time, penalties, weather condition, safety car, yellow flag, can all affect prediction accuracy. It requires at least 2-3 laps to get sensible readings, and more laps to have better accuracy.
 
 * `Final lap progress` values will not be displayed if no corresponding valid lap time pace data found, which requires at least 1 or 2 laps to record. If local player is the leader, then all values from leader's row will not be displayed. Refilling values will not be displayed during formation lap for the reasons mentioned in first note.
 
@@ -2752,10 +2824,10 @@ See `TIME` or `LAPS` type race example usages below for details.
 
 3. Compare the two `final lap progress` values from leader and local player, assume fuel per lap is `3.8`:
 
-    * If leader's `final lap progress` value is greater than local player, such as leader's 0.91 (50s column) vs player's 0.47 (30s column), it indicates that leader will be ahead of local player when timer ended, and there will be no extra final lap. So `local player's refilling` value from corresponding `30s` column can be used, in this case, it's `+7.4` fuel to add.  
+    * If leader's `final lap progress` value is greater than local player, such as leader's 0.91 (50s column) vs player's 0.47 (30s column), it indicates that leader will be ahead of local player when timer ended, and there will be no extra final lap. So `local player's refilling` value from corresponding `30s` column can be used, in this case, it's `+7.4` fuel to add.
     However, if leader is closer to finish line (as show in orange color indicator), there is a chance that leader may be fast enough to cross finish line before the end of timer, which would result an extra final lap for local player, and requires adding an extra lap of fuel (`3.8`) on top of `+7.4` fuel. In this case it would be `+11.2` refuel, or you can simply look at the refuel value from `extra refilling row` of same column.
 
-    * If local player's `final lap progress` value is greater than leader, such as leader's 0.10 (30s column) vs player's 0.39 (40s column), it indicates that local player will be ahead of leader when timer ended, and there will be an extra final lap for local player, and here again requires adding an extra lap of fuel (`3.8`) on top of `+7.4` fuel from `40s` column, which is `+11.2` refuel.  
+    * If local player's `final lap progress` value is greater than leader, such as leader's 0.10 (30s column) vs player's 0.39 (40s column), it indicates that local player will be ahead of leader when timer ended, and there will be an extra final lap for local player, and here again requires adding an extra lap of fuel (`3.8`) on top of `+7.4` fuel from `40s` column, which is `+11.2` refuel.
     However, if the difference between the two `final lap progress` values is smaller than `relative lap difference` (from third row first cell) value, it may indicate that leader could overtake local player on final lap, which would result no extra final lap.
 
 4. To sum up, if comparison shows no extra final lap, then just refill according to `local player's refilling` (fifth row) value from the same column of `local player's final lap progress` (third row). If comparison shows an extra final lap, then just add an extra lap of fuel on top of `local player's refilling` value; or, just look at the refuel value from `extra refilling row` of same column.
@@ -2779,15 +2851,15 @@ Note, there is generally no reason to use this widget in `LAPS` type race unless
 
 3. Subtract `local player's final lap progress` value from `leader's final lap progress`, then round down value:
 
-    * If leader's `final lap progress` value is 2.00 (0s column), and local player's `final lap progress` value is 0.40 (0s column), then after subtracting (2 - 0.4 = 1.6) and rounding down, the final value is `1` lap difference, which means local player will do `one less lap` than leader.  
-    As mentioned earlier, for laps-type race, refilling value from `0s column` is calculated according to leader's `leader's final lap progress` value, which any lap difference is already included in the result from `local player's refilling` value (fifth row second cell), in this case, it's `+12.8` fuel to add.  
+    * If leader's `final lap progress` value is 2.00 (0s column), and local player's `final lap progress` value is 0.40 (0s column), then after subtracting (2 - 0.4 = 1.6) and rounding down, the final value is `1` lap difference, which means local player will do `one less lap` than leader.
+    As mentioned earlier, for laps-type race, refilling value from `0s column` is calculated according to leader's `leader's final lap progress` value, which any lap difference is already included in the result from `local player's refilling` value (fifth row second cell), in this case, it's `+12.8` fuel to add.
 
-    * If leader's `final lap progress` value is 1.43 (40s column), and local player's `final lap progress` value is -0.24 (50s column), then after subtracting (1.43 - -0.24 = 1.67) and rounding down, the final value is also `1` lap difference, which means local player will do the same `one less lap` than leader. So in this case, it's still `+12.8` fuel to add.  
+    * If leader's `final lap progress` value is 1.43 (40s column), and local player's `final lap progress` value is -0.24 (50s column), then after subtracting (1.43 - -0.24 = 1.67) and rounding down, the final value is also `1` lap difference, which means local player will do the same `one less lap` than leader. So in this case, it's still `+12.8` fuel to add.
 
-    * If leader's `final lap progress` value is 2.00 (0s column), and local player's `final lap progress` value is -0.11 (40s column), then after subtracting (2 - -0.11 = 2.11) and rounding down, the final value is `2` lap difference, which means local player will do `two less laps` than leader. So an extra lap of fuel may be removed from `local player's refilling` value from fifth row second cell, in this case, it's `12.8` minus one lap of fuel `2.2`, equals `+10.6` fuel to add. Alternatively, it can be calculated from full lap refuel (as show in Fuel Widget), which will be `15.0` minus two lap of fuel `4.4`, and equals `+10.6` fuel to add.  
+    * If leader's `final lap progress` value is 2.00 (0s column), and local player's `final lap progress` value is -0.11 (40s column), then after subtracting (2 - -0.11 = 2.11) and rounding down, the final value is `2` lap difference, which means local player will do `two less laps` than leader. So an extra lap of fuel may be removed from `local player's refilling` value from fifth row second cell, in this case, it's `12.8` minus one lap of fuel `2.2`, equals `+10.6` fuel to add. Alternatively, it can be calculated from full lap refuel (as show in Fuel Widget), which will be `15.0` minus two lap of fuel `4.4`, and equals `+10.6` fuel to add.
     Be aware that carrying less fuel is risky in laps-type race due to reasons below.
 
-4. Last note, since the end of laps-type race is determined by the moment that leader completed all race laps, leader can greatly affect final predication outcome. To give an extreme example, if leader is ahead of everyone by a few laps, and decides to wait a few minutes on his final lap before finish line, then everyone else will be catching up and do a few `extra laps` which would require more fuel. Thus it is always risky to carry less fuel in laps-type race.
+4. Last note, since the end of laps-type race is determined by the moment that leader completed all race laps, leader can greatly affect final prediction outcome. To give an extreme example, if leader is ahead of everyone by a few laps, and decides to wait a few minutes on his final lap before finish line, then everyone else will be catching up and do a few `extra laps` which would require more fuel. Thus it is always risky to carry less fuel in laps-type race.
 
 ---
 
@@ -2819,11 +2891,11 @@ The first column of extra refilling row shows number of extra laps depends on `n
     number_of_extra_laps
 Set number of extra laps for extra refilling calculation. Default is `1` extra lap.
 
-    number_of_predication
-Set number of optional predication columns with customizable pit time. Value range in `0` to `10`. Default is `4` extra customizable columns.
+    number_of_prediction
+Set number of optional prediction columns with customizable pit time. Value range in `0` to `10`. Default is `4` extra customizable columns.
 
-    predication_*_leader_pit_time, predication_*_player_pit_time
-Set predication pit time for leader or local player.
+    prediction_*_leader_pit_time, prediction_*_player_pit_time
+Set prediction pit time for leader or local player.
 
 [**`Back to Top`**](#)
 
@@ -2964,10 +3036,10 @@ Set maximum amount vehicles to display for classes where player is not in. Defau
 Set split gap between each class.
 
     show_time_gap
-For race session, this option shows time gap between leader and all other drivers. For other none race sessions, this option shows the time gap between session's best lap time and all other drivers.
+Show each driver's time gap behind overall leader in race session. In none race sessions, time gap is calculated from overall leader's session best lap time.
 
-    show_time_gap_from_class_best
-Show time gap from none race session's best lap time of the same vehicle class.
+    show_time_gap_from_same_class
+Show time gap from same class leader instead of overall leader. This option only takes effect while `enable_multi_class_split_mode` is enabled.
 
     time_gap_leader_text
 Set text indicator for race leader in time gap column.
@@ -2997,6 +3069,25 @@ Enable this option to invert layout order for delta lap time records.
 
     number_of_delta_laptime
 Set number of delta lap time records to display. Minimum number is limited to `2`, maximum is limited to `5`.
+
+    show_energy_remaining
+Show remaining virtual energy reading in percentage from each driver, with 4 different states:
+- Unavailable: virtual energy reading is not available currently, default color grey.
+- High: above 30% remaining, default color green.
+- low: from 30% to 10% remaining, default color orange.
+- critical: 10% or lower remaining, default color red.
+
+**Known limitation with remaining virtual energy readings**
+
+Currently, remaining virtual energy data from `LMU's Rest API` is updated only when driver completes a lap, which means the data from API will not change during a lap, but only at the moment a lap is done by a driver. And due to this, the data will not tell how much energy was refilled in pit until the driver finished his pit out lap. This makes the data less useful by itself.
+
+To workaround this API limitation, a special interpolation algorithm is implemented, which enables accurate estimates to remaining energy progressively during a lap for each driver. The average accuracy of estimation is within 1%.
+
+Some cases where interpolation may not be applied:
+- Interpolation may require at least 1 full lap (not counting pit out lap) done before it can take effect.
+- During pit stop, refilled energy reading may not be updated until driver finishes his pit out lap (as mentioned earlier), which means old energy reading persists during pit out lap and would result wrong estimates with interpolation. For this reason, interpolation is disabled during pit out lap.
+
+In either case, just wait another lap and energy readings will be synchronized.
 
 [**`Back to Top`**](#)
 
@@ -3059,6 +3150,8 @@ Show rotation line only while vehicle is stationary (less than 1m/s).
 
 ## Stint history
 **This widget displays stint history info.**
+
+This widget consists of five columns from left to right (default order): `Total completed laps`, `Total driving time`, `Total fuel or virtual energy consumption`, `Tyre compound`, `Total average tyre wear (percent)`.
 
     layout
 2 layouts are available: `0` = vertical layout, `1` = reversed vertical layout.
@@ -3195,6 +3288,9 @@ Note, while multi-class styling is enabled, following color styles will not be d
     show_position_in_class
 Show position in class while `enable_multi_class_styling` option is also enabled, otherwise this option has no effect.
 
+    show_lap_difference_outline
+Show outline color based on lap difference (ahead or behind) between player and opponents. This option is disabled by default.
+
     show_pitout_prediction
 Show estimated pit out on-track position indication for each pit stop duration. Default indication shows `circle` with `pit stop duration` displayed above.
 
@@ -3205,16 +3301,16 @@ For accurate prediction, the location of `pit out line` must be found first. And
     show_pitout_prediction_while_requested_pitstop
 Show estimated pit out on-track position indication while player has requested pitstop and not in pit lane.
 
-    number_of_predication
-Set number of pit out predication to display. Value range is limited in `1` to `20`.
+    number_of_prediction
+Set number of pit out prediction to display. Value range is limited in `1` to `20`.
 
     pitstop_duration_minimum
-Set pit stop duration (in seconds) of first predication.
+Set pit stop duration (in seconds) of first prediction.
 
     pitstop_duration_increment
-Set each pit stop duration (in seconds) increment after previous predication. Default increment is `10` seconds.
+Set each pit stop duration (in seconds) increment after previous prediction. Default increment is `10` seconds.
 
-Note, each time when pit stop duration of the nearest predication exceeded current pit stop timer, the predication circle will be removed, and a new predication circle will be appended with pit stop duration increment after the last predication.
+Note, each time when pit stop duration of the nearest prediction exceeded current pit stop timer, the prediction circle will be removed, and a new prediction circle will be appended with pit stop duration increment after the last prediction.
 
     pitout_time_offset
 Set amount time offset (in seconds) for catching up with vehicle speed after pit out. Default is `3` seconds.
@@ -3222,7 +3318,7 @@ Set amount time offset (in seconds) for catching up with vehicle speed after pit
 Note, this value is important for accurate prediction, as initial vehicle speed is much slower after pit out, so extra time is needed for driver to catch up, and also affected by pit out line location. For most tracks, this extra time after pit out is roughly within `1` to `5` seconds.
 
     show_pitstop_duration
-Show pit stop duration reading on top of each predication circle.
+Show pit stop duration reading on top of each prediction circle.
 
 [**`Back to Top`**](#)
 
@@ -3444,22 +3540,21 @@ Show tyre compound symbols (front and rear) that matches specific tyre compounds
 2 layouts are available: `0` = vertical layout, `1` = horizontal layout.
 
     show_remaining
-Show total remaining tyre in percentage that changes color according to wear.
+Show total remaining tyre tread in percentage that changes color according to wear.
 
     show_wear_difference
-Show total tyre wear difference of previous lap.
-
-    show_live_wear_difference
-Show tyre wear difference of current lap that constantly updated.
-
-    freeze_duration
-Set freeze duration (seconds) for displaying previous lap tyre wear if `show_live_wear_difference` is enabled. Value range in `0` to `30` seconds. Default is `10` seconds.
+Show estimated tyre wear difference per lap (at least one valid lap is required).
 
     show_lifespan_laps
 Show estimated tyre lifespan in laps.
 
     show_lifespan_minutes
 Show estimated tyre lifespan in minutes.
+
+    show_end_stint_remaining
+Show estimated total remaining tyre tread at the end of current stint, which helps to determine whether there is enough tread for current or more stints. Negative reading indicates that there will not be enough tyre tread remaining at the end of current stint.
+
+For example, if minimum safe tyre tread is around 10%, then for triple-stint tyre saving, aim for 70% remaining tread for first stint, 40% for second stint, and 10% for third stint.
 
     warning_threshold_remaining
 Set warning threshold for total remaining tyre in percentage. Default is `30` percent.
@@ -3479,9 +3574,7 @@ Set warning threshold for estimated tyre lifespan in minutes. Default is `5` lap
 ## Virtual energy
 **This widget displays virtual energy usage info.**
 
-Note, most options are inherited from [Fuel](#fuel) widget, with some additions noted below.
-
-Virtual energy is not `real energy`, and different from `battery charge`. For battery charge usage info, see [Battery](#battery) widget.
+Note, most options are inherited from [Fuel](#fuel) widget, with some additions noted below. For battery charge usage info, see [Battery](#battery) widget.
 
     show_absolute_refilling
 Show absolute refilling value instead of relative refilling when enabled. Note, `+` or `-` sign is not displayed with absolute refilling.

@@ -13,14 +13,11 @@ from glob import glob
 
 from py2exe import freeze
 
+from tinypedal import check_version
 from tinypedal.const_app import (
     APP_NAME,
     COPYRIGHT,
     PLATFORM,
-    PSUTIL_VERSION,
-    PYSIDE_VERSION,
-    PYTHON_VERSION,
-    QT_VERSION,
     VERSION,
 )
 
@@ -36,7 +33,7 @@ EXECUTABLE_SETTING = [
 ]
 
 EXCLUDE_MODULES = [
-    # Removed "_ssl" and "ssl" from excludes because websockets needs them
+
     "difflib",
     "pdb",
     "venv",
@@ -47,6 +44,12 @@ EXCLUDE_MODULES = [
     "unittest",
     "xmlrpc",
     "multiprocessing",
+    # "_ssl",
+    # "ssl",
+    # "email",
+    # "http",
+    # "urllib",
+
 ]
 
 IMAGE_FILES = [
@@ -110,9 +113,11 @@ BUILD_OPTIONS = {
     "anyio.abc",
     "anyio._backends._asyncio",
     ],
-    "dll_excludes": [],
+    
     "optimize": 2,
     "compressed": 1,
+    # "dll_excludes": ["libcrypto-1_1.dll", "libcrypto-3.dll"],
+    # "bundle_files": 2,
 }
 
 BUILD_VERSION = {
@@ -196,10 +201,10 @@ def build_exe() -> None:
 def build_start() -> None:
     print(f"INFO:platform: {PLATFORM}")
     print(f"INFO:TinyPedal: {VERSION}")
-    print(f"INFO:Python: {PYTHON_VERSION}")
-    print(f"INFO:Qt: {QT_VERSION}")
-    print(f"INFO:PySide: {PYSIDE_VERSION}")
-    print(f"INFO:psutil: {PSUTIL_VERSION}")
+    print(f"INFO:Python: {check_version('PYTHON')}")
+    print(f"INFO:Qt: {check_version('QT')}")
+    print(f"INFO:PySide: {check_version('PYSIDE')}")
+    print(f"INFO:psutil: {check_version('PSUTIL')}")
     if PLATFORM == "Windows":
         cli_args = get_cli_argument()
         if check_old_build(cli_args.clean, check_dist()):

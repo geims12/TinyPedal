@@ -48,6 +48,7 @@ from . import set_style_palette, set_style_window
 from ._common import UIScaler
 from .menu import ConfigMenu, HelpMenu, OverlayMenu, ToolsMenu, WindowMenu
 from .module_view import ModuleList
+from .notification import NotifyBar
 from .pace_notes_view import PaceNotesControl
 from .preset_view import PresetList
 from .spectate_view import SpectateList
@@ -55,32 +56,6 @@ from .remote_sessions_view import SessionBrowser
 from .pit_menu_remote_control import PitMenuRemoteControl
 
 logger = logging.getLogger(__name__)
-
-
-class NotifyBar(QWidget):
-    """Notify bar"""
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.spectate = QPushButton("Spectate Mode Enabled")
-        self.spectate.setObjectName("notifySpectate")
-        self.spectate.clicked.connect(lambda _: parent.select_tab(3))
-
-        self.pacenotes = QPushButton("Pace Notes Playback Enabled")
-        self.pacenotes.setObjectName("notifyPacenotes")
-        self.pacenotes.clicked.connect(lambda _: parent.select_tab(4))
-
-        self.presetlocked = QPushButton("Preset Locked")
-        self.presetlocked.setObjectName("notifyPresetLocked")
-        self.presetlocked.clicked.connect(lambda _: parent.select_tab(2))
-
-        layout = QVBoxLayout()
-        layout.addWidget(self.spectate)
-        layout.addWidget(self.pacenotes)
-        layout.addWidget(self.presetlocked)
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layout)
 
 
 class TabView(QWidget):
@@ -204,8 +179,8 @@ class StatusButtonBar(QStatusBar):
         # Wait saving finish
         while cfg.is_saving:
             time.sleep(0.01)
-        self.refresh()
-        self._parent.quit_app()
+        # self.refresh()
+        # self._parent.quit_app()
         loader.restart()
 
     def toggle_color_theme(self):
@@ -377,11 +352,11 @@ class AppWindow(QMainWindow):
 
     def quit_app(self):
         """Quit manager"""
+        loader.close()  # must close this first
         self.save_window_state()
         self.__break_signal()
-        self.findChild(QSystemTrayIcon).hide()  # hide icon in case of restart
-        QApplication.quit()  # close app first
-        loader.close()
+        self.findChild(QSystemTrayIcon).hide()  # workaround tray icon not removed after exited
+        QApplication.quit()
 
     def closeEvent(self, event):
         """Minimize to tray"""
@@ -397,7 +372,7 @@ class AppWindow(QMainWindow):
         self.statusBar().refresh()
         self.tab_view.refresh_tab(3)
 
-    @Slot(bool)
+    @Slot(bool)  # type: ignore[operator]
     def reload_preset(self):
         """Reload current preset"""
         loader.reload(reload_preset=True)
@@ -415,9 +390,11 @@ class AppWindow(QMainWindow):
         self.tab_view.refresh_tab()
 
     def __connect_signal(self):
-        """Connect overlay reload signal"""
+        """Connect signal"""
         octrl.state.reload.connect(self.reload_preset)
+        logger.info("GUI: connect signals")
 
     def __break_signal(self):
-        """Disconnect overlay reload signal"""
+        """Disconnect signal"""
         octrl.state.reload.disconnect(self.reload_preset)
+        logger.info("GUI: disconnect signals")

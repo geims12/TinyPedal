@@ -20,12 +20,13 @@
 Vehicle brand editor
 """
 
+from __future__ import annotations
+
+import asyncio
 import json
 import logging
 import os
-import socket
 import time
-from urllib.request import urlopen
 
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -39,8 +40,8 @@ from PySide6.QtWidgets import (
 )
 
 from ..api_control import api
+from ..async_request import get_response, set_header_get
 from ..const_file import ConfigType, FileFilter
-from ..module_control import wctrl
 from ..setting import cfg, copy_setting
 from ._common import (
     BaseEditor,
@@ -92,8 +93,11 @@ class VehicleBrandEditor(BaseEditor):
         import_rf2 = import_menu.addAction("RF2 Rest API")
         import_rf2.triggered.connect(self.import_from_rf2)
 
-        import_lmu = import_menu.addAction("LMU Rest API")
+        import_lmu = import_menu.addAction("LMU Rest API (Primary)")
         import_lmu.triggered.connect(self.import_from_lmu)
+
+        import_lmu_alt = import_menu.addAction("LMU Rest API (Alternative)")
+        import_lmu_alt.triggered.connect(self.import_from_lmu_alt)
 
         import_json = import_menu.addAction("JSON file")
         import_json.triggered.connect(self.import_from_file)
@@ -150,37 +154,39 @@ class VehicleBrandEditor(BaseEditor):
 
     def import_from_rf2(self):
         """Import brand from RF2"""
-        self.import_from_restapi("RF2")
+        self.import_from_restapi(
+            "RF2",
+            cfg.user.setting["module_restapi"]["url_port_rf2"],
+            "/rest/race/car",
+        )
 
     def import_from_lmu(self):
-        """Import brand from LMU"""
-        self.import_from_restapi("LMU")
+        """Import brand from LMU (primary source)"""
+        self.import_from_restapi(
+            "LMU",
+            cfg.user.setting["module_restapi"]["url_port_lmu"],
+            "/rest/race/car",
+        )
 
-    def import_from_restapi(self, sim_name: str):
+    def import_from_lmu_alt(self):
+        """Import brand from LMU (alternative source)"""
+        self.import_from_restapi(
+            "LMU",
+            cfg.user.setting["module_restapi"]["url_port_lmu"],
+            "/rest/sessions/getAllVehicles",
+        )
+
+    def import_from_restapi(self, sim_name: str, url_port: int, resource_name: str):
         """Import brand from Rest API"""
-        config = cfg.user.setting["module_restapi"]
-        url_host = config["url_host"]
-
-        if sim_name == "LMU":
-            url_port = config["url_port_lmu"]
-            resource_name = "sessions/getAllVehicles"
-        elif sim_name == "RF2":
-            url_port = config["url_port_rf2"]
-            resource_name = "race/car"
-        else:
-            return
-
-        url = f"http://{url_host}:{url_port}/rest/{resource_name}"
+        url_host = cfg.user.setting["module_restapi"]["url_host"]
+        request_header = set_header_get(resource_name, url_host)
+        time_out = 3
 
         try:
-            with urlopen(url, timeout=3) as raw_resource:
-                if raw_resource.getcode() != 200:
-                    raise ValueError
-                dict_vehicles = json.loads(raw_resource.read().decode("utf-8"))
-                self.parse_brand_data(dict_vehicles)
-
-        except (TypeError, AttributeError, KeyError, ValueError,
-                OSError, TimeoutError, socket.timeout):
+            raw_veh_data = asyncio.run(get_response(request_header, url_host, url_port, time_out))
+            self.parse_brand_data(json.loads(raw_veh_data))
+        except (AttributeError, TypeError, IndexError, KeyError, ValueError,
+                OSError, TimeoutError, BaseException):
             logger.error("Failed importing vehicle data from %s Rest API", sim_name)
             msg_text = (
                 f"Unable to import vehicle data from {sim_name} Rest API.<br><br>"
@@ -202,7 +208,6 @@ class VehicleBrandEditor(BaseEditor):
             with open(filename_full, "r", encoding="utf-8") as jsonfile:
                 dict_vehicles = json.load(jsonfile)
                 self.parse_brand_data(dict_vehicles)
-
         except (AttributeError, IndexError, KeyError, TypeError,
                 FileNotFoundError, ValueError, OSError):
             logger.error("Failed importing %s", filename_full)
@@ -240,7 +245,7 @@ class VehicleBrandEditor(BaseEditor):
 
     def add_brand(self):
         """Add new brand"""
-        row_index = self.table_brands.rowCount()
+        start_index = row_index = self.table_brands.rowCount()
         # Add all missing vehicle name from active session
         veh_total = api.read.vehicle.total_vehicles()
         for index in range(veh_total):
@@ -249,9 +254,10 @@ class VehicleBrandEditor(BaseEditor):
                 self.add_vehicle_entry(row_index, veh_name, "Unknown")
                 row_index += 1
         # Add new name entry
-        new_brand_name = self.new_name_increment("New Vehicle Name", self.table_brands)
-        self.add_vehicle_entry(row_index, new_brand_name, "Unknown")
-        self.table_brands.setCurrentCell(row_index, 0)
+        if start_index == row_index:
+            new_brand_name = self.new_name_increment("New Vehicle Name", self.table_brands)
+            self.add_vehicle_entry(row_index, new_brand_name, "Unknown")
+            self.table_brands.setCurrentCell(row_index, 0)
 
     def add_vehicle_entry(self, row_index: int, veh_name: str, brand_name: str):
         """Add new brand entry to table"""
@@ -314,7 +320,7 @@ class VehicleBrandEditor(BaseEditor):
         cfg.save(0, cfg_type=ConfigType.BRANDS)
         while cfg.is_saving:  # wait saving finish
             time.sleep(0.01)
-        wctrl.reload()
+        self.reloading()
         self.set_unmodified()
 
 

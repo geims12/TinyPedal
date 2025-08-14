@@ -18,7 +18,7 @@
 
 """
 API data adapter
-"""
+
 
 from .syncer import RF2Syncer
 

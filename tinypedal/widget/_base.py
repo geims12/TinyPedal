@@ -22,7 +22,8 @@ Overlay base window, events.
 
 from __future__ import annotations
 
-from typing import Any, NamedTuple
+from typing import Any
+
 
 from PySide6.QtCore import QBasicTimer, Qt, Slot
 from PySide6.QtGui import QFont, QFontMetrics, QPalette, QPixmap
@@ -30,10 +31,12 @@ from PySide6.QtWidgets import QGridLayout, QLabel, QLayout, QWidget
 
 from .. import regex_pattern as rxp
 from ..const_app import APP_NAME
+from ..formatter import format_module_name
 from ..overlay_control import octrl
 from ..setting import Setting
+from ._common import ExLabel, FontMetrics, MousePosition
 
-FONT_WEIGHT_LIST = rxp.CHOICE_COMMON[rxp.CFG_FONT_WEIGHT]
+mousepos = MousePosition()  # single instance shared by all widgets
 
 
 class Overlay(QWidget):
@@ -56,32 +59,32 @@ class Overlay(QWidget):
         self.setWindowTitle(f"{APP_NAME} - {widget_name.capitalize()}")
         self.move(self.wcfg["position_x"], self.wcfg["position_y"])
 
-        # Widget mouse event
-        self._mouse_pos = None
-
         # Set update timer
         self._update_timer = QBasicTimer()
+        self._update_interval = max(
+            self.wcfg["update_interval"],
+            self.cfg.application["minimum_update_interval"],
+        )
 
     def start(self):
         """Set initial widget state in orders, and start update"""
         self.__connect_signal()
         self.__set_window_attributes()  # 1
         self.__set_window_flags()  # 2
-        update_interval = max(
-            self.wcfg["update_interval"],
-            self.cfg.application["minimum_update_interval"],
-        )
-        self._update_timer.start(update_interval, self)
+        self.__toggle_timer(not self.state.active)
 
     def stop(self):
         """Stop and close widget"""
-        self._update_timer.stop()
+        self.__toggle_timer(True)
         self.__break_signal()
         self.unload_resource()
         self.wcfg = None
         self.cfg = None
         self.state = None
         self.closed = self.close()
+
+    def post_update(self):
+        """Run once after state inactive"""
 
     def unload_resource(self):
         """Unload resource (such as images) on close, can re-implement in widget"""
@@ -107,8 +110,7 @@ class Overlay(QWidget):
             self.setWindowFlag(Qt.Tool, True)
         if self.cfg.compatibility["enable_bypass_window_manager"]:
             self.setWindowFlag(Qt.X11BypassWindowManagerHint, True)
-        if self.cfg.overlay["fixed_position"]:  # load overlay lock state
-            self.setWindowFlag(Qt.WindowTransparentForInput, True)
+        self.__toggle_lock(locked=self.cfg.overlay["fixed_position"])
 
     def __set_window_style(self):
         """Set window style"""
@@ -116,14 +118,37 @@ class Overlay(QWidget):
         palette.setColor(QPalette.Window, self.cfg.compatibility["global_bkg_color"])
         self.setPalette(palette)
 
+    def contextMenuEvent(self, event):
+        """Widget context menu"""
+        menu = QMenu()
+
+        show_name = menu.addAction(format_module_name(self.widget_name))
+        show_name.setDisabled(True)
+        menu.addSeparator()
+
+        menu.addAction("Center Horizontally")
+        menu.addAction("Center Vertically")
+
+        selected_action = menu.exec_(event.globalPos())
+        if not selected_action:
+            return
+
+        action = selected_action.text()
+        if action == "Center Horizontally":
+            self.move((self.screen().geometry().width() - self.width()) // 2, self.y())
+            self.__save_position()
+        elif action == "Center Vertically":
+            self.move(self.x(), (self.screen().geometry().height() - self.height()) // 2)
+            self.__save_position()
+
     def mouseMoveEvent(self, event):
         """Update widget position"""
-        if self._mouse_pos and event.buttons() == Qt.LeftButton:
-            pos = event.globalPos() - self._mouse_pos
-            if self.cfg.overlay["enable_grid_move"]:
-                move_size = max(self.cfg.application["grid_move_size"], 1)
-                pos = pos / move_size * move_size
-            self.move(pos)
+        if mousepos.valid() and event.buttons() == Qt.LeftButton:
+            # Snapping to reference grid if Ctrl is pressed
+            if (event.modifiers() & Qt.ControlModifier):
+                self.move(mousepos.snapping(self, event.globalPos()))
+            else:
+                self.move(mousepos.moving(event.globalPos()))
 
     def mousePressEvent(self, event):
         """Set offset position & press state"""
@@ -131,36 +156,66 @@ class Overlay(QWidget):
         if self.cfg.overlay["fixed_position"]:
             return
         if event.buttons() == Qt.LeftButton:
-            self._mouse_pos = event.pos()
+            mousepos.config(
+                event.pos(),
+                self.cfg.overlay["enable_grid_move"],
+                self.cfg.application["grid_move_size"],
+                self.cfg.application["snap_gap"],
+                self.cfg.application["snap_distance"],
+            )
 
     def mouseReleaseEvent(self, event):
         """Save position on release"""
-        if self._mouse_pos:
-            self._mouse_pos = None
+        mousepos.reset()
+        self.__save_position()
+
+    def __save_position(self):
+        """Save widget position"""
+        save_changes = False
+        if self.wcfg["position_x"] != self.x():
             self.wcfg["position_x"] = self.x()
+            save_changes = True
+        if self.wcfg["position_y"] != self.y():
             self.wcfg["position_y"] = self.y()
+            save_changes = True
+        if save_changes:
             self.cfg.save()
 
-    @Slot(bool)
+    @Slot(bool)  # type: ignore[operator]
     def __toggle_lock(self, locked: bool):
         """Toggle widget lock state"""
         self.setWindowFlag(Qt.WindowTransparentForInput, locked)
+        # Need re-check after lock/unlock
+        self.setHidden(self.cfg.overlay["auto_hide"] and not self.state.active)
 
-    @Slot(bool)
+    @Slot(bool)  # type: ignore[operator]
     def __toggle_vr_compat(self, enabled: bool):
         """Toggle widget VR compatibility"""
         self.setWindowFlag(Qt.Tool, not enabled)
+        # Need re-check
+        self.setHidden(self.cfg.overlay["auto_hide"] and not self.state.active)
+
+    @Slot(bool)  # type: ignore[operator]
+    def __toggle_timer(self, paused: bool):
+        """Toggle widget timer state"""
+        if paused:
+            self._update_timer.stop()
+            self.post_update()
+        else:
+            self._update_timer.start(self._update_interval, self)
 
     def __connect_signal(self):
         """Connect overlay lock and hide signal"""
         self.state.locked.connect(self.__toggle_lock)
         self.state.hidden.connect(self.setHidden)
+        self.state.paused.connect(self.__toggle_timer)
         self.state.vr_compat.connect(self.__toggle_vr_compat)
 
     def __break_signal(self):
         """Disconnect overlay lock and hide signal"""
         self.state.locked.disconnect(self.__toggle_lock)
         self.state.hidden.disconnect(self.setHidden)
+        self.state.paused.disconnect(self.__toggle_timer)
         self.state.vr_compat.disconnect(self.__toggle_vr_compat)
 
     def closeEvent(self, event):
@@ -231,6 +286,10 @@ class Overlay(QWidget):
             )
         return self.wcfg["font_offset_vertical"]
 
+    def set_base_style(self, style_sheet: str):
+        """Set base style sheet"""
+        self.setStyleSheet(style_sheet)
+
     @staticmethod
     def set_padding(size: int, scale: float, side: int = 2) -> int:
         """Set padding
@@ -291,7 +350,7 @@ class Overlay(QWidget):
             font_size_pixel = f"font-size:{max(font_size, 1)}px;"
         else:
             font_size_pixel = ""
-        if font_weight in FONT_WEIGHT_LIST:
+        if font_weight in rxp.CHOICE_COMMON[rxp.CFG_FONT_WEIGHT]:
             font_weight = f"font-weight:{font_weight};"
         return f"{fg_color}{bg_color}{font_family}{font_size_pixel}{font_weight}"
 
@@ -324,9 +383,10 @@ class Overlay(QWidget):
         Returns:
             QLabel instance.
         """
-        bar_temp = QLabel(self)
+        bar_temp = ExLabel(self)
         bar_temp.setTextFormat(Qt.PlainText)
         bar_temp.setTextInteractionFlags(Qt.NoTextInteraction)
+        bar_temp.setAlignment(self.set_text_alignment(align))
 
         if text is not None:
             bar_temp.setText(text)
@@ -335,7 +395,7 @@ class Overlay(QWidget):
             bar_temp.setPixmap(pixmap)
 
         if style is not None:
-            bar_temp.setStyleSheet(style)
+            bar_temp.updateStyle(style)
 
         if fixed_width > 0:
             bar_temp.setFixedWidth(fixed_width)
@@ -347,8 +407,9 @@ class Overlay(QWidget):
         elif height > 0:
             bar_temp.setMinimumHeight(height)
 
-        bar_temp.setAlignment(self.set_text_alignment(align))
-        bar_temp.last = last
+        if last is not None:
+            bar_temp.last = last
+
         return bar_temp
 
     def set_qlabel(
@@ -544,13 +605,3 @@ def validate_column_order(config: dict):
             while config[key] in column_set:
                 config[key] += 1
             column_set.append(config[key])
-
-
-class FontMetrics(NamedTuple):
-    """Font metrics info"""
-
-    width: int = 0
-    height: int = 0
-    leading: int = 0
-    capital: int = 0
-    descent: int = 0

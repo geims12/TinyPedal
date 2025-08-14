@@ -32,6 +32,7 @@ from ..const_common import (
 )
 from ..module_info import minfo
 from ..units import set_unit_fuel
+from ..validator import generator_init
 from ._base import Overlay
 
 
@@ -55,7 +56,7 @@ class Realtime(Overlay):
         bar_width = font_m.width * self.char_width + bar_padx
         self.range_start = max(self.wcfg["near_start_range"], 0)
         self.range_finish = max(self.wcfg["near_finish_range"], 0)
-        self.total_slot = min(max(self.wcfg["number_of_predication"], 0), 10) + 3
+        self.total_slot = min(max(self.wcfg["number_of_prediction"], 0), 10) + 3
         self.leader_pit_time_set = list(self.create_pit_time_set(self.total_slot, "leader"))
         self.player_pit_time_set = list(self.create_pit_time_set(self.total_slot, "player"))
         self.decimals_laps = max(self.wcfg["decimal_places_laps"], 0)
@@ -69,10 +70,9 @@ class Realtime(Overlay):
         self.gen_leader_pace = calc_laptime_pace(
             min(max(self.wcfg["leader_laptime_pace_samples"], 1), 20),
             max(self.wcfg["leader_laptime_pace_margin"], 0.1))
-        self.gen_leader_pace.send(None)
 
         # Base style
-        self.setStyleSheet(self.set_qss(
+        self.set_base_style(self.set_qss(
             font_family=self.wcfg["font_name"],
             font_size=self.wcfg["font_size"],
             font_weight=self.wcfg["font_weight"])
@@ -204,11 +204,6 @@ class Realtime(Overlay):
 
     def timerEvent(self, event):
         """Update when vehicle on track"""
-        if self.state.active:
-            self.update_predication()
-
-    def update_predication(self):
-        """Update predication"""
         is_lap_type_session = api.read.session.lap_type()
         in_formation = api.read.session.in_formation()
         energy_type = minfo.restapi.maxVirtualEnergy
@@ -246,18 +241,14 @@ class Realtime(Overlay):
         fuel_in_tank = 0 if self.wcfg["show_absolute_refilling"] else consumption.amountCurrent
         fuel_consumption = consumption.estimatedValidConsumption
 
+        # Update lap progress difference & refill type
+        self.update_energy_type(self.bars_refill[0], energy_type)
+        self.update_race_type(self.bars_pit_leader[0], is_lap_type_session)
+        lap_diff = calc.lap_progress_difference(leader_laptime_pace, player_laptime_pace)
+        self.update_lap_int(self.bars_lap_player[0], lap_diff)
+
         # Update slots
-        for index in range(self.total_slot):
-            # Update lap progress difference & refill type
-            if index == 0:
-                self.update_energy_type(self.bars_refill[index], energy_type)
-
-                self.update_race_type(self.bars_pit_leader[index], is_lap_type_session)
-
-                lap_diff = calc.lap_progress_difference(leader_laptime_pace, player_laptime_pace)
-                self.update_lap_int(self.bars_lap_player[index], lap_diff)
-                continue
-
+        for index in range(1, self.total_slot):
             # Predicate player
             if not player_valid:
                 lap_final, player_hi_range, full_laps_left = -MAX_SECONDS, 0, 0
@@ -334,7 +325,7 @@ class Realtime(Overlay):
             else:
                 lap_text = TEXT_PLACEHOLDER
             target.setText(lap_text)
-            target.setStyleSheet(self.leader_lap_color[highlight])
+            target.updateStyle(self.leader_lap_color[highlight])
 
     def update_lap_player(self, target, data, highlight):
         """Player final lap progress"""
@@ -345,7 +336,7 @@ class Realtime(Overlay):
             else:
                 lap_text = TEXT_PLACEHOLDER
             target.setText(lap_text)
-            target.setStyleSheet(self.player_lap_color[highlight])
+            target.updateStyle(self.player_lap_color[highlight])
 
     def update_lap_int(self, target, data):
         """Lap progress difference"""
@@ -393,7 +384,7 @@ class Realtime(Overlay):
         yield 0  # reserved first 2 slots
         yield 0
         for index in range(total_slot - 3):
-            yield max(self.wcfg[f"predication_{index + 1}_{suffix}_pit_time"], 0)
+            yield max(self.wcfg[f"prediction_{index + 1}_{suffix}_pit_time"], 0)
         yield 0  # reserved last slot
 
     def set_highlight_range(self, laptime_pace, lap_final):
@@ -407,6 +398,7 @@ class Realtime(Overlay):
         return 0
 
 
+@generator_init
 def calc_laptime_pace(samples: int = 6, margin: float = 5, laptime: float = MAX_SECONDS):
     """Calculate lap time pace for specific player"""
     laptime_pace = laptime

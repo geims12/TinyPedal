@@ -165,6 +165,12 @@ def set_style_window(base_font_pt: int) -> str:
         NotifyBar #notifyPresetLocked {{
             background: #777;
         }}
+        NotifyBar #notifyUpdates {{
+            background: #A4A;
+        }}
+        NotifyBar #notifyUpdates::menu-indicator {{
+            image: None;
+        }}
 
         /* Module list (tab) */
         ModuleList QListView {{
@@ -308,6 +314,18 @@ def set_style_window(base_font_pt: int) -> str:
         }}
         FuelCalculator QLineEdit[readOnly="true"]{{
             background: {color_active_window};
+        }}
+        FuelCalculator QLabel {{
+            font-size: {font_pt_text_browser}pt;
+        }}
+        FuelCalculator PitStopPreview {{
+            font-size: {font_pt_text_browser}pt;
+            font-weight:bold;
+        }}
+        FuelCalculator PitStopPreview QLabel {{
+            color: {color_inactive_highlighted_text};
+            background: {color_inactive_highlight};
+            font-weight:bold;
         }}
         About QLabel {{
             font-size: {font_pt_text_browser}pt;

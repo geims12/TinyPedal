@@ -43,7 +43,7 @@ class Realtime(Overlay):
         self.freeze_duration = min(max(self.wcfg["freeze_duration"], 0), 30)
 
         # Base style
-        self.setStyleSheet(self.set_qss(
+        self.set_base_style(self.set_qss(
             font_family=self.wcfg["font_name"],
             font_size=self.wcfg["font_size"],
             font_weight=self.wcfg["font_weight"])
@@ -57,7 +57,10 @@ class Realtime(Overlay):
                     bg_color=self.wcfg["bkg_color_battery_charge"]),
                 self.set_qss(
                     fg_color=self.wcfg["font_color_battery_charge"],
-                    bg_color=self.wcfg["warning_color_low_battery"])
+                    bg_color=self.wcfg["warning_color_low_battery"]),
+                self.set_qss(
+                    fg_color=self.wcfg["font_color_battery_charge"],
+                    bg_color=self.wcfg["warning_color_high_battery"])
             )
             self.bar_charge = self.set_qlabel(
                 text="BATTERY",
@@ -135,43 +138,46 @@ class Realtime(Overlay):
 
     def timerEvent(self, event):
         """Update when vehicle on track"""
-        if self.state.active:
+        # Battery charge & usage
+        if self.wcfg["show_battery_charge"]:
+            battery_charge = minfo.hybrid.batteryCharge
+            self.update_charge(self.bar_charge, battery_charge)
 
-            # Battery charge & usage
-            if self.wcfg["show_battery_charge"]:
-                battery_charge = minfo.hybrid.batteryCharge
-                self.update_charge(self.bar_charge, battery_charge)
+        if 0 <= minfo.delta.lapTimeCurrent < self.freeze_duration:
+            battery_drain = minfo.hybrid.batteryDrainLast
+            battery_regen = minfo.hybrid.batteryRegenLast
+        else:
+            battery_drain = minfo.hybrid.batteryDrain
+            battery_regen = minfo.hybrid.batteryRegen
 
-            if 0 <= minfo.delta.lapTimeCurrent < self.freeze_duration:
-                battery_drain = minfo.hybrid.batteryDrainLast
-                battery_regen = minfo.hybrid.batteryRegenLast
-            else:
-                battery_drain = minfo.hybrid.batteryDrain
-                battery_regen = minfo.hybrid.batteryRegen
+        if self.wcfg["show_battery_drain"]:
+            self.update_drain(self.bar_drain, battery_drain)
 
-            if self.wcfg["show_battery_drain"]:
-                self.update_drain(self.bar_drain, battery_drain)
+        if self.wcfg["show_battery_regen"]:
+            self.update_regen(self.bar_regen, battery_regen)
 
-            if self.wcfg["show_battery_regen"]:
-                self.update_regen(self.bar_regen, battery_regen)
+        if self.wcfg["show_estimated_net_change"]:
+            net_change = minfo.hybrid.batteryNetChange
+            self.update_net(self.bar_net, net_change)
 
-            if self.wcfg["show_estimated_net_change"]:
-                net_change = minfo.hybrid.batteryNetChange
-                self.update_net(self.bar_net, net_change)
-
-            # Motor activation timer
-            if self.wcfg["show_activation_timer"]:
-                active_timer = minfo.hybrid.motorActiveTimer
-                self.update_timer(self.bar_timer, active_timer)
+        # Motor activation timer
+        if self.wcfg["show_activation_timer"]:
+            active_timer = minfo.hybrid.motorActiveTimer
+            self.update_timer(self.bar_timer, active_timer)
 
     # GUI update methods
     def update_charge(self, target, data):
         """Battery charge"""
         if target.last != data:
             target.last = data
+            if data >= self.wcfg["high_battery_threshold"]:
+                color_index = 2
+            elif data <= self.wcfg["low_battery_threshold"]:
+                color_index = 1
+            else:
+                color_index = 0
             target.setText(f"B{data: >7.2f}"[:8])
-            target.setStyleSheet(
-                self.bar_style_charge[data <= self.wcfg["low_battery_threshold"]])
+            target.updateStyle(self.bar_style_charge[color_index])
 
     def update_drain(self, target, data):
         """Battery drain"""

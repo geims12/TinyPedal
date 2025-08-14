@@ -24,11 +24,21 @@ from __future__ import annotations
 
 from typing import Any, Callable, NamedTuple
 
-from ..const_common import PITEST_DEFAULT
+from ..const_common import EMPTY_DICT, PITEST_DEFAULT
 from ..module_info import minfo
 from ..process.pitstop import EstimatePitTime
-from ..process.vehicle import steerlock_to_number
+from ..process.vehicle import expected_usage, steerlock_to_number, stint_ve_usage
 from ..process.weather import FORECAST_DEFAULT, forecast_rf2
+
+
+class HttpSetup(NamedTuple):
+    """Http connection setup"""
+
+    host: str
+    port: int
+    timeout: float
+    retry: int
+    retry_delay: float
 
 
 class ResRawOutput(NamedTuple):
@@ -50,9 +60,10 @@ class ResRawOutput(NamedTuple):
                 setattr(self.output, self.name, self.default)
                 return False
             data = data.get(key)
-            if data is None:  # not exist, set to default
-                setattr(self.output, self.name, self.default)
-                return False
+        # Not exist, set to default
+        if data is None:
+            setattr(self.output, self.name, self.default)
+            return False
         # Reset to default if value is not same type as default
         if not isinstance(data, type(self.default)):
             data = self.default
@@ -80,9 +91,10 @@ class ResParOutput(NamedTuple):
                 setattr(self.output, self.name, self.default)
                 return False
             data = data.get(key)
-            if data is None:  # not exist, set to default
-                setattr(self.output, self.name, self.default)
-                return False
+        # Not exist, set to default
+        if data is None:
+            setattr(self.output, self.name, self.default)
+            return False
         # Parse and output
         setattr(self.output, self.name, self.parser(data))
         return True
@@ -90,49 +102,74 @@ class ResParOutput(NamedTuple):
 
 EMPTY_KEYS: tuple[str, ...] = tuple()
 
-# Define output set
-SET_TIMESCALE = (
-    ResRawOutput(minfo.restapi, "timeScale", 1, ("currentValue",)),
-)
-SET_PRIVATEQUALIFY = (
-    ResRawOutput(minfo.restapi, "privateQualifying", 0, ("currentValue",)),
-)
-SET_CHASSIS = (
-    ResParOutput(minfo.restapi, "steeringWheelRange", 0.0, steerlock_to_number, ("VM_STEER_LOCK", "stringValue")),
-)
-SET_CURRENTSTINT = (
-    ResRawOutput(minfo.restapi, "currentVirtualEnergy", 0.0, ("fuelInfo", "currentVirtualEnergy")),
-    ResRawOutput(minfo.restapi, "maxVirtualEnergy", 0.0, ("fuelInfo", "maxVirtualEnergy")),
-    ResRawOutput(minfo.restapi, "aeroDamage", -1.0, ("wearables", "body", "aero")),
-    ResRawOutput(minfo.restapi, "brakeWear", [-1] * 4, ("wearables", "brakes")),
-    ResRawOutput(minfo.restapi, "suspensionDamage", [-1] * 4, ("wearables", "suspension")),
-)
-SET_GAMESTATE = (
-    ResRawOutput(minfo.restapi, "trackClockTime", -1.0, ("timeOfDay",)),
-)
-SET_PITMENUINFO = (
-    ResParOutput(minfo.restapi, "pitStopEstimate", PITEST_DEFAULT, EstimatePitTime(), EMPTY_KEYS),
-)
-SET_PITSTOPTIME = (
-    ResRawOutput(minfo.restapi, "pitTimeReference", dict(), ("pitStopTimes", "times")),
-)
-SET_WEATHERFORECAST = (
+# Common
+COMMON_WEATHERFORECAST = (
     ResParOutput(minfo.restapi, "forecastPractice", FORECAST_DEFAULT, forecast_rf2, ("PRACTICE",)),
     ResParOutput(minfo.restapi, "forecastQualify", FORECAST_DEFAULT, forecast_rf2, ("QUALIFY",)),
     ResParOutput(minfo.restapi, "forecastRace", FORECAST_DEFAULT, forecast_rf2, ("RACE",)),
 )
+# RF2
+RF2_TIMESCALE = (
+    ResRawOutput(minfo.restapi, "timeScale", 1, ("currentValue",)),
+)
+RF2_PRIVATEQUALIFY = (
+    ResRawOutput(minfo.restapi, "privateQualifying", 0, ("currentValue",)),
+)
+RF2_GARAGESETUP = (
+    ResParOutput(minfo.fuel, "expectedConsumption", 0.0, expected_usage, ("VM_FUEL_LEVEL", "stringValue")),
+)
+# LMU
+LMU_CURRENTSTINT = (
+    ResRawOutput(minfo.restapi, "currentVirtualEnergy", 0.0, ("fuelInfo", "currentVirtualEnergy")),
+    ResRawOutput(minfo.restapi, "maxVirtualEnergy", 0.0, ("fuelInfo", "maxVirtualEnergy")),
+    ResRawOutput(minfo.restapi, "aeroDamage", -1.0, ("wearables", "body", "aero")),
+    ResRawOutput(minfo.restapi, "brakeWear", [], ("wearables", "brakes")),
+    ResRawOutput(minfo.restapi, "suspensionDamage", [], ("wearables", "suspension")),
+    ResRawOutput(minfo.restapi, "trackClockTime", -1.0, ("sessionTime", "timeOfDay")),
+    ResParOutput(minfo.restapi, "pitStopEstimate", PITEST_DEFAULT, EstimatePitTime(), EMPTY_KEYS),
+)
+LMU_GARAGESETUP = (
+    ResParOutput(minfo.restapi, "steeringWheelRange", 0.0, steerlock_to_number, ("VM_STEER_LOCK", "stringValue")),
+    ResParOutput(minfo.fuel, "expectedConsumption", 0.0, expected_usage, ("VM_FUEL_CAPACITY", "stringValue")),
+    ResParOutput(minfo.energy, "expectedConsumption", 0.0, expected_usage, ("VM_VIRTUAL_ENERGY", "stringValue")),
+)
+LMU_SESSIONSINFO = (
+    ResRawOutput(minfo.restapi, "timeScale", 1, ("SESSSET_race_timescale", "currentValue")),
+    ResRawOutput(minfo.restapi, "privateQualifying", 0, ("SESSSET_private_qual", "currentValue")),
+)
+LMU_PITSTOPTIME = (
+    ResRawOutput(minfo.restapi, "penaltyTime", 0.0, ("penalties",)),
+)
+LMU_STINTUSAGE = (
+    ResParOutput(minfo.restapi, "stintVirtualEnergy", EMPTY_DICT, stint_ve_usage, EMPTY_KEYS),
+)
+#LMU_GAMESTATE = (
+#    ResRawOutput(minfo.restapi, "trackClockTime", -1.0, ("timeOfDay",)),
+#)
+#("LMU", "/rest/sessions/GetGameState", LMU_GAMESTATE, None),
 
 # Define task set
-# 0 - sim name pattern, 1 - uri address, 2 - output set, 3 - enabling condition
-TASK_RUNONCE = (
-    ("LMU|RF2", "/rest/sessions/setting/SESSSET_race_timescale", SET_TIMESCALE, None),
-    ("LMU|RF2", "/rest/sessions/setting/SESSSET_private_qual", SET_PRIVATEQUALIFY, None),
-    ("LMU|RF2", "/rest/sessions/weather", SET_WEATHERFORECAST, None),
-    ("LMU", "/rest/garage/chassis", SET_CHASSIS, None),
-    ("LMU", "/rest/garage/UIScreen/RepairAndRefuel", SET_PITSTOPTIME, "enable_pit_strategy_access"),
+# 0 - uri path, 1 - output set, 2 - enabling condition, 3 is repeating task, 4 minimum update interval
+TASKSET_RF2 = (
+    ("/rest/sessions/weather", COMMON_WEATHERFORECAST, "enable_weather_info", False, 0.1),
+    ("/rest/sessions/setting/SESSSET_race_timescale", RF2_TIMESCALE, "enable_session_info", False, 0.1),
+    ("/rest/sessions/setting/SESSSET_private_qual", RF2_PRIVATEQUALIFY, "enable_session_info", False, 0.1),
+    ("/rest/garage/fuel", RF2_GARAGESETUP, "enable_garage_setup_info", False, 0.1),
 )
-TASK_REPEATS = (
-    ("LMU", "/rest/garage/UIScreen/DriverHandOffStintEnd", SET_CURRENTSTINT, None),
-    ("LMU", "/rest/sessions/GetGameState", SET_GAMESTATE, None),
-    ("LMU", "/rest/garage/PitMenu/receivePitMenu", SET_PITMENUINFO, "enable_pit_strategy_access"),
+TASKSET_LMU = (
+    ("/rest/sessions/weather", COMMON_WEATHERFORECAST, "enable_weather_info", False, 0.1),
+    ("/rest/sessions", LMU_SESSIONSINFO, "enable_session_info", False, 0.1),
+    ("/rest/garage/getPlayerGarageData", LMU_GARAGESETUP, "enable_garage_setup_info", False, 0.1),
+    ("/rest/garage/UIScreen/RepairAndRefuel", LMU_CURRENTSTINT, "enable_vehicle_info", True, 0.2),
+    ("/rest/strategy/pitstop-estimate", LMU_PITSTOPTIME, "enable_vehicle_info", True, 1.0),
+    ("/rest/strategy/usage", LMU_STINTUSAGE, "enable_energy_remaining", True, 1.0),
 )
+
+
+def select_taskset(name: str) -> tuple:
+    """Select taskset"""
+    if name == "RF2":
+        return TASKSET_RF2
+    if name == "LMU":
+        return TASKSET_LMU
+    return ()

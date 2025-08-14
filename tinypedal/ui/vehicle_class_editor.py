@@ -35,7 +35,6 @@ from PySide6.QtWidgets import (
 from ..api_control import api
 from ..const_file import ConfigType
 from ..formatter import random_color_class
-from ..module_control import wctrl
 from ..setting import cfg, copy_setting
 from ._common import (
     QVAL_COLOR,
@@ -136,7 +135,7 @@ class VehicleClassEditor(BaseEditor):
 
     def add_class(self):
         """Add new class entry"""
-        row_index = self.table_classes.rowCount()
+        start_index = row_index = self.table_classes.rowCount()
         # Add all missing vehicle class from active session
         veh_total = api.read.vehicle.total_vehicles()
         for index in range(veh_total):
@@ -146,10 +145,11 @@ class VehicleClassEditor(BaseEditor):
                     row_index, class_name, class_name, random_color_class(class_name))
                 row_index += 1
         # Add new class entry
-        new_class_name = self.new_name_increment("New Class Name", self.table_classes)
-        self.add_vehicle_entry(
-            row_index, new_class_name, "NAME", random_color_class(str(random.random())))
-        self.table_classes.setCurrentCell(row_index, 0)
+        if start_index == row_index:
+            new_class_name = self.new_name_increment("New Class Name", self.table_classes)
+            self.add_vehicle_entry(
+                row_index, new_class_name, "NAME", random_color_class(str(random.random())))
+            self.table_classes.setCurrentCell(row_index, 0)
 
     def add_vehicle_entry(self, row_index: int, class_name: str, alias_name: str, color: str):
         """Add new class entry to table"""
@@ -217,5 +217,5 @@ class VehicleClassEditor(BaseEditor):
         cfg.save(0, cfg_type=ConfigType.CLASSES)
         while cfg.is_saving:  # wait saving finish
             time.sleep(0.01)
-        wctrl.reload()
+        self.reloading()
         self.set_unmodified()

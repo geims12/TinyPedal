@@ -35,7 +35,27 @@ from ..calculation import (
 from ..formatter import strip_invalid_char
 from ..validator import bytes_to_str as tostr
 from ..validator import infnan_to_zero as rmnan
-from . import DataAdapter
+from . import rf2_connector
+
+
+class DataAdapter:
+    """Read & sort data into groups
+
+    Attributes:
+        info: API object.
+    """
+
+    __slots__ = (
+        "info",
+    )
+
+    def __init__(self, info: rf2_connector.RF2Info) -> None:
+        """Initialize API setting
+
+        Args:
+            info: API object.
+        """
+        self.info = info
 
 
 class Check(DataAdapter):
@@ -45,10 +65,9 @@ class Check(DataAdapter):
 
     def api_state(self) -> bool:
         """API state"""
-        return (
-            not self.info.isPaused and
-            (self.info.rf2ScorInfo.mInRealtime
-            or self.info.rf2TeleVeh().mIgnitionStarter)
+        return not self.info.isPaused and (
+            self.info.rf2ScorInfo.mInRealtime
+            or self.info.rf2TeleVeh().mIgnitionStarter > 0
         )
 
     def api_version(self) -> str:
@@ -613,14 +632,14 @@ class Tyre(DataAdapter):
             rmnan(wheel_data[3].mTireLoad),
         )
 
-    def wear(self, index: int | None = None, scale: float = 1) -> tuple[float, ...]:
+    def wear(self, index: int | None = None) -> tuple[float, ...]:
         """Tyre wear (fraction)"""
         wheel_data = self.info.rf2TeleVeh(index).mWheels
         return (
-            rmnan(wheel_data[0].mWear) * scale,
-            rmnan(wheel_data[1].mWear) * scale,
-            rmnan(wheel_data[2].mWear) * scale,
-            rmnan(wheel_data[3].mWear) * scale,
+            rmnan(wheel_data[0].mWear),
+            rmnan(wheel_data[1].mWear),
+            rmnan(wheel_data[2].mWear),
+            rmnan(wheel_data[3].mWear),
         )
 
     def carcass_temperature(self, index: int | None = None) -> tuple[float, ...]:
@@ -645,7 +664,7 @@ class Vehicle(DataAdapter):
 
     def is_driving(self) -> bool:
         """Is local player driving or in monitor"""
-        return self.info.rf2TeleVeh().mIgnitionStarter
+        return self.info.rf2TeleVeh().mIgnitionStarter > 0
 
     def player_index(self) -> int:
         """Get Local player index"""
@@ -691,9 +710,14 @@ class Vehicle(DataAdapter):
         """Is in garage"""
         return self.info.rf2ScorVeh(index).mInGarageStall
 
-    def number_pitstops(self, index: int | None = None) -> int:
+    def in_paddock(self, index: int | None = None) -> int:
+        """Is in paddock (either pit lane or garage), 0 = on track, 1 = pit lane, 2 = garage"""
+        state = self.info.rf2ScorVeh(index)
+        return 2 if state.mInGarageStall else state.mInPits
+
+    def number_pitstops(self, index: int | None = None, penalty: int = 0) -> int:
         """Number of pit stops"""
-        return self.info.rf2ScorVeh(index).mNumPitstops
+        return -penalty if penalty else self.info.rf2ScorVeh(index).mNumPitstops
 
     def number_penalties(self, index: int | None = None) -> int:
         """Number of penalties"""
@@ -783,7 +807,7 @@ class Vehicle(DataAdapter):
         """Downforce rear (Newtons)"""
         return rmnan(self.info.rf2TeleVeh(index).mRearDownforce)
 
-    def damage_severity(self, index: int | None = None) -> tuple[int, ...]:
+    def damage_severity(self, index: int | None = None) -> tuple[int, int, int, int, int, int, int, int]:
         """Damage severity, sort row by row from left to right, top to bottom"""
         dmg = self.info.rf2TeleVeh(index).mDentSeverity
         return dmg[1], dmg[0], dmg[7], dmg[2], dmg[6], dmg[3], dmg[4], dmg[5]  # RF2 order

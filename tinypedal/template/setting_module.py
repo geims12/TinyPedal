@@ -85,7 +85,11 @@ MODULE_DEFAULT = {
         "connection_timeout": 1,
         "connection_retry": 3,
         "connection_retry_delay": 1,
-        "enable_pit_strategy_access": True,
+        "enable_energy_remaining": True,
+        "enable_garage_setup_info": True,
+        "enable_session_info": True,
+        "enable_vehicle_info": True,
+        "enable_weather_info": True,
     },
     "module_sectors": {
         "enable": True,
@@ -115,5 +119,6 @@ MODULE_DEFAULT = {
         "maximum_rotation_difference_front": 0.002,
         "maximum_rotation_difference_rear": 0.002,
         "cornering_radius_sampling_interval": 10,
+        "minimum_delta_distance": 5,
     },
 }

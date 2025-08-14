@@ -43,7 +43,7 @@ class Realtime(Overlay):
         bar_width = font_m.width * 6 + bar_padx
 
         # Base style
-        self.setStyleSheet(self.set_qss(
+        self.set_base_style(self.set_qss(
             font_family=self.wcfg["font_name"],
             font_size=self.wcfg["font_size"],
             font_weight=self.wcfg["font_weight"])
@@ -137,32 +137,30 @@ class Realtime(Overlay):
 
     def timerEvent(self, event):
         """Update when vehicle on track"""
-        if self.state.active:
+        # G force
+        if self.wcfg["show_g_force"]:
+            # Longitudinal g-force
+            gf_lgt = round(minfo.force.lgtGForceRaw, 2)
+            self.update_gf_lgt(self.bar_gforce_lgt, gf_lgt)
 
-            # G force
-            if self.wcfg["show_g_force"]:
-                # Longitudinal g-force
-                gf_lgt = round(minfo.force.lgtGForceRaw, 2)
-                self.update_gf_lgt(self.bar_gforce_lgt, gf_lgt)
+            # Lateral g-force
+            gf_lat = round(minfo.force.latGForceRaw, 2)
+            self.update_gf_lat(self.bar_gforce_lat, gf_lat)
 
-                # Lateral g-force
-                gf_lat = round(minfo.force.latGForceRaw, 2)
-                self.update_gf_lat(self.bar_gforce_lat, gf_lat)
+        # Downforce ratio
+        if self.wcfg["show_downforce_ratio"]:
+            df_ratio = round(minfo.force.downForceRatio, 2)
+            self.update_df_ratio(self.bar_df_ratio, df_ratio)
 
-            # Downforce ratio
-            if self.wcfg["show_downforce_ratio"]:
-                df_ratio = round(minfo.force.downForceRatio, 2)
-                self.update_df_ratio(self.bar_df_ratio, df_ratio)
+        # Front downforce
+        if self.wcfg["show_front_downforce"]:
+            df_front = round(minfo.force.downForceFront)
+            self.update_df_front(self.bar_df_front, df_front)
 
-            # Front downforce
-            if self.wcfg["show_front_downforce"]:
-                df_front = round(minfo.force.downForceFront)
-                self.update_df_front(self.bar_df_front, df_front)
-
-            # Rear downforce
-            if self.wcfg["show_rear_downforce"]:
-                df_rear = round(minfo.force.downForceRear)
-                self.update_df_rear(self.bar_df_rear, df_rear)
+        # Rear downforce
+        if self.wcfg["show_rear_downforce"]:
+            df_rear = round(minfo.force.downForceRear)
+            self.update_df_rear(self.bar_df_rear, df_rear)
 
     # GUI update methods
     def update_gf_lgt(self, target, data):
@@ -189,14 +187,14 @@ class Realtime(Overlay):
         if target.last != data:
             target.last = data
             target.setText(f"F{abs(data):5.0f}"[:6])
-            target.setStyleSheet(self.bar_style_df_front[data < 0])
+            target.updateStyle(self.bar_style_df_front[data < 0])
 
     def update_df_rear(self, target, data):
         """Downforce rear"""
         if target.last != data:
             target.last = data
             target.setText(f"R{abs(data):5.0f}"[:6])
-            target.setStyleSheet(self.bar_style_df_rear[data < 0])
+            target.updateStyle(self.bar_style_df_rear[data < 0])
 
     # Additional methods
     @staticmethod

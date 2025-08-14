@@ -22,7 +22,7 @@ Constants
 
 import platform
 
-from . import get_lib_version, set_app_version, set_global_user_path, version
+from . import set_app_version, set_global_user_path, version
 
 # System info
 PLATFORM = platform.system()
@@ -30,26 +30,18 @@ PLATFORM = platform.system()
 # App version
 VERSION = set_app_version(version.__version__, version.DEVELOPMENT)
 
-# Library version
-PYTHON_VERSION = get_lib_version("python")
-QT_VERSION = get_lib_version("qt")
-PYSIDE_VERSION = get_lib_version("pyside")
-PSUTIL_VERSION = get_lib_version("psutil")
-
 # App info
 APP_NAME = "TinyPedal"
+REPO_NAME = "s-victor/TinyPedal"
 COPYRIGHT = "Copyright (C) 2022-2025 TinyPedal developers"
 DESCRIPTION = "A Free and Open Source telemetry overlay application for racing simulation."
 LICENSE = "Licensed under the GNU General Public License v3.0 or later."
 
 # URL
-URL_WEBSITE = "https://github.com/s-victor/TinyPedal"
-URL_USER_GUIDE = "https://github.com/s-victor/TinyPedal/wiki/User-Guide"
-URL_FAQ = "https://github.com/s-victor/TinyPedal/wiki/Frequently-Asked-Questions"
-
-# File name
-LOG_FILE = "tinypedal.log"
-PID_FILE = "pid.log"
+URL_WEBSITE = f"https://github.com/{REPO_NAME}"
+URL_USER_GUIDE = f"{URL_WEBSITE}/wiki/User-Guide"
+URL_FAQ = f"{URL_WEBSITE}/wiki/Frequently-Asked-Questions"
+URL_RELEASE = f"{URL_WEBSITE}/releases"
 
 # Global path
 PATH_GLOBAL = set_global_user_path(APP_NAME, PLATFORM)

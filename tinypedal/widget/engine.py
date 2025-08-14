@@ -57,7 +57,7 @@ class Realtime(Overlay):
         self.symbol_pres = set_symbol_pressure(self.cfg.units["turbo_pressure_unit"])
 
         # Base style
-        self.setStyleSheet(self.set_qss(
+        self.set_base_style(self.set_qss(
             font_family=self.wcfg["font_name"],
             font_size=self.wcfg["font_size"],
             font_weight=self.wcfg["font_weight"])
@@ -185,43 +185,41 @@ class Realtime(Overlay):
 
     def timerEvent(self, event):
         """Update when vehicle on track"""
-        if self.state.active:
+        # Oil temperature
+        if self.wcfg["show_oil_temperature"]:
+            temp_oil = round(api.read.engine.oil_temperature(), 2)
+            self.update_oil(self.bar_oil, temp_oil)
 
-            # Oil temperature
-            if self.wcfg["show_oil_temperature"]:
-                temp_oil = round(api.read.engine.oil_temperature(), 2)
-                self.update_oil(self.bar_oil, temp_oil)
+        # Water temperature
+        if self.wcfg["show_water_temperature"]:
+            temp_water = round(api.read.engine.water_temperature(), 2)
+            self.update_water(self.bar_water, temp_water)
 
-            # Water temperature
-            if self.wcfg["show_water_temperature"]:
-                temp_water = round(api.read.engine.water_temperature(), 2)
-                self.update_water(self.bar_water, temp_water)
+        # Turbo pressure
+        if self.wcfg["show_turbo_pressure"]:
+            turbo = int(api.read.engine.turbo())
+            self.update_turbo(self.bar_turbo, turbo)
 
-            # Turbo pressure
-            if self.wcfg["show_turbo_pressure"]:
-                turbo = int(api.read.engine.turbo())
-                self.update_turbo(self.bar_turbo, turbo)
+        # Engine RPM
+        if self.wcfg["show_rpm"]:
+            rpm = int(api.read.engine.rpm())
+            self.update_rpm(self.bar_rpm, rpm)
 
-            # Engine RPM
-            if self.wcfg["show_rpm"]:
-                rpm = int(api.read.engine.rpm())
-                self.update_rpm(self.bar_rpm, rpm)
+        # Engine RPM maximum
+        if self.wcfg["show_rpm_maximum"]:
+            rpm_max = int(api.read.engine.rpm_max())
+            self.update_rpm_max(self.bar_rpm_max, rpm_max)
 
-            # Engine RPM maximum
-            if self.wcfg["show_rpm_maximum"]:
-                rpm_max = int(api.read.engine.rpm_max())
-                self.update_rpm_max(self.bar_rpm_max, rpm_max)
+        # Engine torque
+        if self.wcfg["show_torque"]:
+            torque = round(api.read.engine.torque(), 2)
+            self.update_torque(self.bar_torque, torque)
 
-            # Engine torque
-            if self.wcfg["show_torque"]:
-                torque = round(api.read.engine.torque(), 2)
-                self.update_torque(self.bar_torque, torque)
-
-            # Engine power
-            if self.wcfg["show_power"]:
-                power = round(calc.engine_power(
-                    api.read.engine.torque(), api.read.engine.rpm()), 2)
-                self.update_power(self.bar_power, power)
+        # Engine power
+        if self.wcfg["show_power"]:
+            power = round(calc.engine_power(
+                api.read.engine.torque(), api.read.engine.rpm()), 2)
+            self.update_power(self.bar_power, power)
 
     # GUI update methods
     def update_oil(self, target, data):
@@ -229,14 +227,14 @@ class Realtime(Overlay):
         if target.last != data:
             target.last = data
             target.setText(f"O{self.unit_temp(data): >6.1f}°")
-            target.setStyleSheet(self.bar_style_oil[data >= self.wcfg["overheat_threshold_oil"]])
+            target.updateStyle(self.bar_style_oil[data >= self.wcfg["overheat_threshold_oil"]])
 
     def update_water(self, target, data):
         """Water temperature"""
         if target.last != data:
             target.last = data
             target.setText(f"W{self.unit_temp(data): >6.1f}°")
-            target.setStyleSheet(self.bar_style_water[data >= self.wcfg["overheat_threshold_water"]])
+            target.updateStyle(self.bar_style_water[data >= self.wcfg["overheat_threshold_water"]])
 
     def update_turbo(self, target, data):
         """Turbo pressure"""
