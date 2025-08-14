@@ -26,10 +26,11 @@ import os
 import sys
 
 import psutil
-
-from PySide6.QtCore import QCoreApplication, Qt
-from PySide6.QtGui import QFont, QGuiApplication, QIcon, QPixmapCache
+from PySide6.QtCore import QLocale, QCoreApplication, Qt
+from PySide6.QtGui import QGuiApplication, QIcon, QFont, QPixmapCache
 from PySide6.QtWidgets import QApplication, QMessageBox
+
+
 
 
 from . import check_version
